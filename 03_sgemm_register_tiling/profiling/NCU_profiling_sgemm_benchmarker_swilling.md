@@ -2,11 +2,26 @@ This is sgemm_benchmarker_swizzle — the same register-tiled SGEMM kernel with 
 
 GPU Speed Of Light Throughput
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/72162ef8-b234-44c1-a20c-2e66c6d71f6d" />
+The first thing that jumps out: the swizzle version is significantly slower, not faster. 9.07ms vs 5.69ms — 
+a 59% regression. All the L1/memory pressure numbers dropped dramatically, but L2 and DRAM increased 
+substantially. NCU's top-level diagnosis changed from "High Memory Throughput" to "Latency Issue" — compute 
+and memory are both below 60% of peak, which NCU interprets as the kernel being fundamentally latency-bound 
+rather than throughput-bound.
 
+This means the swizzle successfully reduced shared memory bank conflict traffic through L1/TEX, but something 
+else went badly wrong in the process.
 ______________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/6325170b-84dd-4645-9433-f79a06c27bcc" />
+This is the critical clue. L1/TEX hit rate collapsed from 87.69% to 1.52%. This is not a minor degradation — 
+it's essentially total L1 cache invalidation. Memory throughput jumped from 2.94 GB/s to 109.94 GB/s because 
+now nearly every access misses L1 and goes to L2 or DRAM.
 
+The swizzle transformation broke the spatial locality that your float4 vectorized global loads were 
+exploiting. A swizzle that reorders how data is laid out in shared memory — or how threads index into it — can 
+inadvertently destroy the access pattern that the L1 prefetcher or coalescing logic depended on for the global 
+loads, depending on how the swizzle was applied. The L2 hit rate at 77.99% suggests most misses are served 
+from L2 rather than DRAM, but L2 latency (~200 cycles) vs L1 (~32 cycles) is still devastating.
 ______________________________________________________________________________________________________
 Warps Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/cc124c3a-f4a1-4cec-9b10-23c324b68c17" />
