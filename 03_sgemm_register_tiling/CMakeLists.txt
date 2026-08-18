@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.18)
 project(SgemmProtfolio LANGUAGES CXX CUDA)
 
@@ -6,7 +5,7 @@ project(SgemmProtfolio LANGUAGES CXX CUDA)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES 120)
+set(CMAKE_CUDA_ARCHITECTURES "native")
 
 find_package(OpenMP REQUIRED)
 
@@ -16,7 +15,10 @@ set(SOURCES
     src/main.cpp
     src/warmup.cu
     src/sgemm_regs_tiling_runner.cu
-    kernels/03_sgemm_register_tiling.cu
+    #kernels/03_sgemm_register_tiling.cu
+    #kernels/03_sgemm_register_tiling_float4.cu
+    kernels/03_sgemm_register_tiling_swizzing.cu
+    
 )
 
 
@@ -34,7 +36,9 @@ target_compile_options(sgemm_benchmarker PRIVATE
 
 # ── ptxas flags ONLY for kernel files ────────────────────────────────────────
 set(KERNEL_SOURCES
-    kernels/03_sgemm_register_tiling.cu
+    #kernels/03_sgemm_register_tiling.cu
+    #kernels/03_sgemm_register_tiling_float4.cu
+    kernels/03_sgemm_register_tiling_swizzing.cu
 )
 
 set_source_files_properties(${KERNEL_SOURCES}
@@ -48,49 +52,8 @@ target_link_libraries(sgemm_benchmarker
     cublas
 )
 
-# ── ptxas flags ONLY for kernel files ────────────────────────────────────────
-set(KERNEL_SOURCES
-    kernels/03_sgemm_register_tiling.cu
-)
-
 set_source_files_properties(${KERNEL_SOURCES}
     PROPERTIES COMPILE_OPTIONS
     "-Xptxas=-v;-Xptxas=-warn-spills"
 )
 
-target_link_libraries(sgemm_benchmarker
-    PRIVATE
-    OpenMP::OpenMP_CXX
-    cublas
-)
-
-
-
-# ── ptxas flags ONLY for kernel files ────────────────────────────────────────
-set(KERNEL_SOURCES
-    kernels/03_sgemm_register_tiling.cu
-)
-
-set_source_files_properties(${KERNEL_SOURCES}
-    PROPERTIES COMPILE_OPTIONS
-    "-Xptxas=-v;-Xptxas=-warn-spills"
-)
-
-target_link_libraries(sgemm_benchmarker
-    PRIVATE
-    OpenMP::OpenMP_CXX
-    cublas
-)
-
-# ptxas flags for kernel files only
-
-set(KERNEL_SOURCES
-    kernels/03_sgemm_register_tiling.cu
-)
-
-
-target_link_libraries(sgemm_benchmarker
-    PRIVATE
-    OpenMP::OpenMP_CXX
-    cublas
-)
