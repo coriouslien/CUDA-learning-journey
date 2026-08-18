@@ -109,7 +109,7 @@ But this confirms the regression is entirely from the occupancy and L1 cache eff
 access pattern problems. The swizzle worked correctly for its stated purpose; the implementation just had 
 unacceptable side effects.
 
-Summary:
+Summary:<br>
 The swizzle implementation is correct in intent but regressed on two axes simultaneously:
 
 1. Shared memory consumption increased enough to drop Block Limit Shared Mem from 7 → 1. The swizzle likely
