@@ -8,7 +8,8 @@ Memory Workload Analysis & Scheduler Statics
 
 Warp Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f58fedb5-4e7d-48cf-b7c6-410868585cbb" />
-Warp State
+
+Warp State Ststistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7dfba5b8-a5a7-4d9f-8684-82690a9cc69a" />
 
 Occupancy
