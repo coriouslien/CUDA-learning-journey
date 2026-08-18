@@ -12,7 +12,7 @@ Warp Per Scheduler
 Warp State Ststistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7dfba5b8-a5a7-4d9f-8684-82690a9cc69a" />
 
-Occupancy
+Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c0dae752-18ae-46b3-b721-a6414e1b0465" />
 
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2f31b5a2-a2be-4084-80fe-dc1cb0213a11" />
