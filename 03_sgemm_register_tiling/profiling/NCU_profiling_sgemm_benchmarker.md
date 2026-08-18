@@ -73,18 +73,57 @@ between tile size, registers, and occupancy. These stall bars confirm it quantit
 _________________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/290cdd34-a3a1-4e09-a5a2-62ccdac5a093" />
-Register pressure is the sole occupancy limiter: 2 blocks/SM. Block limit from registers is 2, everything else is far higher (7 for smem, 6 for warps). At 256 threads/block, 2 blocks = 512 threads = 16 warps out of a theoretical 48 (SM120 max) → 33.33%. NCU's estimated speedup from resolving this is 66.67% — the single largest lever in this profile.
+Register pressure is the sole occupancy limiter: 2 blocks/SM. Block limit from registers is 2, everything 
+else is far higher (7 for smem, 6 for warps). At 256 threads/block, 2 blocks = 512 threads = 16 warps out of 
+a theoretical 48 (SM120 max) → 33.33%. NCU's estimated speedup from resolving this is 66.67% — the single
+largest lever in this profile.
 
-The theoretical and achieved occupancy are very close (33.33% vs. 32.24%), meaning the kernel actually fills the SM to its register-limited ceiling with near-perfect efficiency. The problem isn't launch configuration or workload imbalance — it's that 128 registers/thread × 256 threads × 2 blocks = the full SM120 register file.
+The theoretical and achieved occupancy are very close (33.33% vs. 32.24%), meaning the kernel actually fills
+the SM to its register-limited ceiling with near-perfect efficiency. The problem isn't launch configuration or
+workload imbalance — it's that 128 registers/thread × 256 threads × 2 blocks = the full SM120 register file.
 ________________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f677e2bb-3a65-4762-b2d8-979bf389267b" />
-The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. Your kernel is at ~128 registers/thread (dot at x≈128), sitting at ~33%. To get to 50% you'd need ~80 registers; to reach 66% roughly ~64 registers. These are aggressive reductions for a register-tiled kernel that explicitly accumulates in registers — the tiling strategy itself is what's burning registers.
+The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. Your kernel is at 
+~128 registers/thread (dot at x≈128), sitting at ~33%. To get to 50% you'd need ~80 registers; to reach 66% 
+roughly ~64 registers. These are aggressive reductions for a register-tiled kernel that explicitly accumulates 
+in registers — the tiling strategy itself is what's burning registers.
 ______________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4dfb8164-b283-4cfe-b165-e9977fffc77e" />
-
+Current block: 256 threads (dot at x=256), ~33%. The curve is essentially flat between 128–512 threads at 
+25–33%, with a cliff above 512. Block size is not a useful tuning knob here because register count dominates —
+changing block size just shifts which register-limit step you land on.
+_______________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2a381f38-1ee7-4bfe-8f8f-0f0b28b24871" />
-
+Current usage (dot): ~9.5KB/block at ~33%. The step-down at ~32KB corresponds to running out of the L1/shared 
+memory partition. The curve shows the kernel is not shared-memory-limited until well above the current usage — 
+smem is not the constraint, registers are.
+_________________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e8174cbd-7f66-4a5a-87d7-f1e6400dafcc" />
 
+Current barriers: ~2, at ~33%. The drop at ~12 barriers is the SM barrier resource limit for SM120 
+(24 total / 2 blocks = 12/block). Not a constraint at current usage.
+_________________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ef240166-bd8c-4639-92c6-0dd41e3f9209" />
 
+Branch Efficiency: 100%    Avg. Divergent Branches: 0
+Uncoalesced Shared Accesses — Est. Speedup: 36.04%
+268,435,456 excessive wavefronts (38% of total 704,643,072)
+
+This is the smoking gun for the bank conflicts. 38% of all shared memory wavefronts are replay traffic from 
+bank conflicts. The 268M excessive wavefronts (on top of the 436M legitimate ones) maps directly to your 5-way
+conflict factor measured earlier. The 36% estimated speedup from eliminating these is the second-largest lever
+after occupancy.
+______________________________________________________________________________________________________
+Summary:
+Low occupancy (register-limited): 128 regs/thread → 2 blocks/SM; need register spilling or smaller tiles
+Uncoalesced shared memory accesses: 5-way bank conflicts on shared A/B tiles; padding (+8) or swizzle needed
+Not Selected / Dispatch stalls: Consequence of low occupancy — scheduler has nothing to pick
+MIO Throttle / Short Scoreboard: Bank conflict replay inflating MIO queue depth
+
+The occupancy issue (66.67% est. speedup) and shared memory bank conflicts (36.04%) are the two independent 
+problems, and they interact: fixing bank conflicts reduces MIO pressure but doesn't recover the missing warps;
+fixing occupancy gives the scheduler more warps to hide the remaining latencies. The path you already took — 
+moving to WMMA/tensor cores — addresses occupancy indirectly by reducing the register accumulator footprint
+(HMMA executes the FMA in hardware with architectural register reuse). The bank conflict fix you applied 
+(SMEM_A_STRIDE = BLOCK_K + 8) addresses the second problem. That's precisely why you got the 2.55x speedup on 
+the WMMA path.
