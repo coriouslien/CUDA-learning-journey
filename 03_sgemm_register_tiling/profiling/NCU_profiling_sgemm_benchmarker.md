@@ -15,8 +15,10 @@ Warp State Ststistics
 Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c0dae752-18ae-46b3-b721-a6414e1b0465" />
 
+Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2f31b5a2-a2be-4084-80fe-dc1cb0213a11" />
 
+Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/290cdd34-a3a1-4e09-a5a2-62ccdac5a093" />
 
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f677e2bb-3a65-4762-b2d8-979bf389267b" />
