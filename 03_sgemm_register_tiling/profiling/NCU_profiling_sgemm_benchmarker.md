@@ -7,7 +7,7 @@ The bottleneck is L1/TEX at 77%, not DRAM (0.31%) or L2 (1.44%). NCU flags "High
 more heavily utilized than compute." The near-zero L2/DRAM numbers confirm data is largely recycled within L1
 — this is the shared memory / register file pressure picture, not a bandwidth wall against HBM. 
 The 58% compute SOL tells you the SMs are not fully pipelined.
-
+___________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/41c4aaab-dc9e-4445-bb18-7428f710ad98" />
 L1 hit rate of 87.69% and L2 of 91.93% are both very high — almost nothing reaches DRAM. This is consistent 
@@ -22,7 +22,7 @@ Scheduler: 0.61, and No Eligible: 38.71%. The 38.71% no-eligible rate is a hard 
 regularly stalled and the scheduler has nothing to issue — this is the latency hiding failure caused by low 
 occupancy (only ~4 warps/scheduler vs. the 12 maximum).
 
-
+_____________________________________________________________________________________________________
 Warp Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f58fedb5-4e7d-48cf-b7c6-410868585cbb" />
 GPU Maximum Warps Per Scheduler: ~12. Theoretical: ~4. Active: ~3.87. Eligible: ~1.85. Issued: 0.61.
@@ -33,7 +33,7 @@ stalled, so the scheduler sits idle ~38% of cycles. The gap between Eligible (1.
 tells you that even when warps are eligible, the issue rate is far below 1 instruction/cycle — there are 
 structural stalls (dispatch, scoreboard, barriers) preventing back-to-back issuance.
 
-
+______________________________________________________________________________________________________
 Warp State Ststistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7dfba5b8-a5a7-4d9f-8684-82690a9cc69a" />
 Warp Cycles Per Issued Instruction: 6.31. All threads active (Avg Active Threads Per Warp = 32, Not Predicated Off = 32 — no divergence).
@@ -45,7 +45,7 @@ are accumulating priority/scheduling overhead — it suggests reducing active wa
 However, this must be read in context: with only ~4 warps/scheduler, "Not Selected" isn't evidence of healthy
 occupancy; it's evidence that the few warps you have are competing for the issue slot against each other while
 all simultaneously stalled on the same resources (shared memory replay, barriers).
-
+_________________________________________________________________________________________________
 Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c0dae752-18ae-46b3-b721-a6414e1b0465" />
 Warp State
@@ -70,12 +70,16 @@ result → Barrier stalls accumulate because all warps converge at __syncthreads
 
 Your prior analysis in memory already identified the 5-way bank conflicts (271M conflicts) and the catch-22 
 between tile size, registers, and occupancy. These stall bars confirm it quantitatively.
-
+_________________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/290cdd34-a3a1-4e09-a5a2-62ccdac5a093" />
+Register pressure is the sole occupancy limiter: 2 blocks/SM. Block limit from registers is 2, everything else is far higher (7 for smem, 6 for warps). At 256 threads/block, 2 blocks = 512 threads = 16 warps out of a theoretical 48 (SM120 max) → 33.33%. NCU's estimated speedup from resolving this is 66.67% — the single largest lever in this profile.
 
+The theoretical and achieved occupancy are very close (33.33% vs. 32.24%), meaning the kernel actually fills the SM to its register-limited ceiling with near-perfect efficiency. The problem isn't launch configuration or workload imbalance — it's that 128 registers/thread × 256 threads × 2 blocks = the full SM120 register file.
+________________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f677e2bb-3a65-4762-b2d8-979bf389267b" />
-
+The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. Your kernel is at ~128 registers/thread (dot at x≈128), sitting at ~33%. To get to 50% you'd need ~80 registers; to reach 66% roughly ~64 registers. These are aggressive reductions for a register-tiled kernel that explicitly accumulates in registers — the tiling strategy itself is what's burning registers.
+______________________________________________________________________________________________________
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4dfb8164-b283-4cfe-b165-e9977fffc77e" />
 
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2a381f38-1ee7-4bfe-8f8f-0f0b28b24871" />
