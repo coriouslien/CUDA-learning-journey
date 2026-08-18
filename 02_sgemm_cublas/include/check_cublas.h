@@ -1,4 +1,3 @@
-
 // check_cublas.h
 #pragma once
 
@@ -20,3 +19,4 @@ inline void cublasAssert(cublasStatus_t code, const char *file, int line, bool a
         }
     }
 }
+
