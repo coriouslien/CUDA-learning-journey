@@ -215,7 +215,7 @@ cmake --build build
 ### Uncomment the desired kernel in SOURCES and KERNEL_SOURCES ###
 
 NCU profile (requires root or `perf_event_paranoid` set):
-
+<pre>
 ncu \\
     -f \\
     --section SpeedOfLight \\
@@ -228,6 +228,7 @@ ncu \\
     --export ./build/sgemm_benchmarker \\
     --verbose \\
     .build/sgemm_benchmarker
+</pre>
 
 
 
