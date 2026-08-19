@@ -1,6 +1,6 @@
 
 **Kernel: 568 - sgemm_registe..., grid (32,32,1), block (16,16,1) = 256 threads/block. RTX 5080, 5.69ms, 13,040,292 elapsed cycles. This is the baseline register-tiled SGEMM**<br>
-03_sgemm_register_tiling
+**03_sgemm_register_tiling**
 GPU Speed Of Light Throughput
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/8a9a6097-3825-43c3-addd-20af583adbe7" />
 <pre>
@@ -98,32 +98,64 @@ workload imbalance — it's that 128 registers/thread × 256 threads × 2 blocks
 ________________________________________________________________________________________________________
 Impact of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f677e2bb-3a65-4762-b2d8-979bf389267b" />
-The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. Your kernel is at 
-~128 registers/thread (dot at x≈128), sitting at ~33%. To get to 50% you'd need ~80 registers; to reach 66% 
-roughly ~64 registers. These are aggressive reductions for a register-tiled kernel that explicitly accumulates 
+<pre>
+-The Nsight Compute tool explicitly identifies that theoretical occupancy is limited by the number of required
+registers. 
+- The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. The kernel is at 
+~128 registers/thread (dot at x≈128), sitting at ~33%. The "Impact of Varying Register Count" graph shows the
+kernel uses 128 registers per thread. If you can reduce the register footprint per thread below 80,
+theoretical occupancy would jump to 50%; reducing it to 40 or below would allow 100% theoretical occupancy.
+These are aggressive reductions for a register-tiled kernel that explicitly accumulates 
 in registers — the tiling strategy itself is what's burning registers.
+</pre>
 ______________________________________________________________________________________________________
 Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4dfb8164-b283-4cfe-b165-e9977fffc77e" />
-Current block: 256 threads (dot at x=256), ~33%. The curve is essentially flat between 128–512 threads at 
-25–33%, with a cliff above 512. Block size is not a useful tuning knob here because register count dominates —
-changing block size just shifts which register-limit step you land on.
+The kernel currently uses a block size of 256 threads.(dot at x=256), ~33%. The curve is essentially flat
+between 128–512 threads at 25–33%, with a cliff above 512. While adjusting the block size could impact 
+performance, the graph indicates that standard block sizes (e.g., 128, 256, 512) will not lift the occupancy
+ceiling above roughly 33% as long as the register limit remains the bottleneck.
 _______________________________________________________________________________________________________
 impact of Varying Shared Memory Usage Per Block
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2a381f38-1ee7-4bfe-8f8f-0f0b28b24871" />
-Current usage (dot): ~9.5KB/block at ~33%. The step-down at ~32KB corresponds to running out of the L1/shared 
-memory partition. The curve shows the kernel is not shared-memory-limited until well above the current usage — 
-smem is not the constraint, registers are.
+<pre>
+The kernel uses approximately usage (dot) is ~9.5KB/block of shared memory at ~33%. The step-down at ~32KB
+corresponds to running out of the L1/shared memory partition. The curve shows the kernel is not shared-memory-
+limited until well above the current usage. The chart clearly demonstrates that reducing shared memory 
+consumption would not improve occupancy, as the occupancy curve remains flat to the left of the current usage
+point - smem is not the constraint, registers are.
+</pre>
 _________________________________________________________________________________________________________
 Impact of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e8174cbd-7f66-4a5a-87d7-f1e6400dafcc" />
-
-Current barriers: ~2, at ~33%. The drop at ~12 barriers is the SM barrier resource limit for SM120 
-(24 total / 2 blocks = 12/block). Not a constraint at current usage.
+<pre>
+Block Barriers Count: ~2, at ~33%. The drop at ~12 barriers is the SM barrier resource limit for SM120 
+(24 total / 2 blocks = 12/block). The "Impact of Varying Block Barriers" chart shows how the number of
+  synchronization barriers (like __syncthreads()) affects the theoretical occupancy.
+  -The current usage places on the flat plateau at ~33% occupancy.
+  -The chart indicates that as long as the kernel uses 12 or fewer barriers per block, occupancy will not
+  drop. If it was to exceed 12 barriers, theoretical occupancy would fall abruptly to around 15%.
+  -Because the curve is perfectly flat to the left of your current position, reducing the number of
+  synchronization points will not improve the occupancy. (As established in the previous screenshots, 
+  register count is the strict bottleneck limiting occupancy).
+</pre>
 _________________________________________________________________________________________________________
 Impact of Varying Cluster Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ef240166-bd8c-4639-92c6-0dd41e3f9209" />
+<pre>
+Cluster Size: The "Impact of Varying Cluster Size" chart is flat across all values. This suggests that Thread
+Block Clusters—a feature introduced in the Ada Lovelace and Hopper architectures to group blocks together—
+are either not actively utilized in a way that limits occupancy, or my current launch configuration renders
+this metric unrestrictive(I need to study this).
 
+Control Flow and Branch Efficiency:
+Perfect Branch Efficiency: In the "Source Counters" section, the profiler reports 100% Branch Efficiency with
+0 average divergent branches. This is an excellent result. It means that across all 4.33 million branch
+instructions executed, all threads within the active warps took the exact same execution path. It is not
+suffering from any warp divergence (where threads in the same warp take different paths in an if/else
+statement, causing serialized execution), meaning the compute resources are not being wasted on masked-out 
+threads.
+  
 Branch Efficiency: 100%    Avg. Divergent Branches: 0
 Uncoalesced Shared Accesses — Est. Speedup: 36.04%
 268,435,456 excessive wavefronts (38% of total 704,643,072)
@@ -132,6 +164,7 @@ This is the smoking gun for the bank conflicts. 38% of all shared memory wavefro
 bank conflicts. The 268M excessive wavefronts (on top of the 436M legitimate ones) maps directly to your 5-way
 conflict factor measured earlier. The 36% estimated speedup from eliminating these is the second-largest lever
 after occupancy.
+</pre>
 ______________________________________________________________________________________________________
 Summary:
 Low occupancy (register-limited): 128 regs/thread → 2 blocks/SM; need register spilling or smaller tiles
