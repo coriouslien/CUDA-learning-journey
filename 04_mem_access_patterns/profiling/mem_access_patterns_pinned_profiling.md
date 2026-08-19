@@ -1,9 +1,14 @@
 GPU Speed Of Light Throughput
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/a29fe78c-ed3c-4864-b775-1bda5bb7dd0b" />
 <pre>
-The kernel is 0.02 ms faster and hits 87.18% DRAM SOL vs 86.92%. The delta is real but small — about 0.26 percentage points, well within run-to-run variance territory. The critical observation is: the kernel-side metrics are essentially identical. Both profiles are the same bandwidth_coalesced kernel executing on data that already lives in device memory. Pinned vs. pageable only affects the H2D/D2H transfer path; once the data is resident on the GPU, it makes no difference to the kernel.
+The kernel is 0.02 ms faster and hits 87.18% DRAM SOL vs 86.92%. The delta is real but small — 
+about 0.26 percentage points, well within run-to-run variance territory. The critical observation is: 
+the kernel-side metrics are essentially identical. Both profiles are the same bandwidth_coalesced kernel 
+executing on data that already lives in device memory. Pinned vs. pageable only affects the H2D/D2H transfer
+path; once the data is resident on the GPU, it makes no difference to the kernel.
 
-The actual benefit of pinned memory shows up in your cudaEventElapsedTime output for H2D transfers — which NCU doesn't profile. That's where you'd see the real gap.
+The actual benefit of pinned memory shows up in your cudaEventElapsedTime output for H2D transfers — 
+which NCU doesn't profile. That's where you'd see the real gap.
 
 Metric	Pinned	Pageable	Delta
 Duration	2.56 ms	2.58 ms	−0.02 ms
@@ -23,9 +28,11 @@ Memory Workload Analysis & Scheduler Statistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7b3a5b2f-1212-4e62-ae4e-be329f0849d3" />
 <pre>
 
-825 GB/s vs. 822 GB/s — a 2.5 GB/s difference. On a ~960 GB/s theoretical peak device this is 0.26%. This is measurement noise, not a meaningful kernel difference.
+825 GB/s vs. 822 GB/s — a 2.5 GB/s difference. On a ~960 GB/s theoretical peak device this is 0.26%. 
+This is measurement noise, not a meaningful kernel difference.
 
-The L2 hit rate going from 0.00% to 0.01% is also noise — one or two extra L2 hits across 2²⁸ accesses is statistically zero.
+The L2 hit rate going from 0.00% to 0.01% is also noise — one or two extra L2 hits across 2²⁸ accesses is
+statistically zero.
 
 The scheduler numbers are bit-for-bit identical. Active warps, eligible warps, issued warps, no-eligible percentage — all match pageable to two decimal places. This is the definitive confirmation: pinned memory has zero effect on kernel execution. The scheduler does not know or care how the host memory backing was allocated.
 
