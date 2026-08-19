@@ -1,11 +1,11 @@
-# Register-Tiled SGEMM — FP32 Kernel Progression
+## Register-Tiled SGEMM — FP32 Kernel Progression ##
 
 Hardware: NVIDIA RTX 5080 (SM120, Blackwell) · CUDA 12.8 · Ubuntu 24.04  
 Matrix size: 4096 × 4096 × 4096 (FP32)  
 Block tile: BM=128, BN=128, BK=8, TM=8, TN=8 · Threads: dim3(16, 16) = 256/block
 
 
-## Results at a Glance
+** Results at a Glance **
 
 | Kernel | Time | TFLOPS | Registers | Blocks/SM | Occupancy | NCU Primary Stall |
 |--------|------|--------|-----------|-----------|-----------|-------------------|
