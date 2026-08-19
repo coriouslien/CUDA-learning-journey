@@ -58,7 +58,8 @@ ________________________________________________________________________________
 Warp Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/5622907e-72fb-4d41-83b1-f30c9e9141a8" />
 <pre>
-Visually identical to pageable. Active ~9.5, Eligible and Issued both near zero. Same enormous gap between active and eligible — same DRAM-stall signature.
+Visually identical to pageable. Active ~9.5, Eligible and Issued both near zero. Same enormous gap between 
+active and eligible — same DRAM-stall signature.
 
 
 </pre>
@@ -74,39 +75,44 @@ Warp State Statistics
 Long Scoreboard is identical at 120.2 cycles. The DRAM round-trip latency is a hardware constant; it doesn't care what memory type was on the host before the H2D transfer.
 
 The Est. Speedup dropping from 13.08% to 12.82% is interesting — pinned is marginally closer to optimal in NCU's model, consistent with the slightly higher throughput.
-
-
-Metric	Pinned	Pageable	Delta
-Warp Cycles Per Issued Instruction	131.17	130.98	+0.19
-Avg. Active Threads Per Warp	32	32	identical
-Avg. Not Predicated Off Threads	30.12	30.12	identical
-Long Scoreboard Stalls	120.2 cycles	120.2 cycles	identical
-Long Scoreboard % of total	91.6%	91.8%	−0.2%
-Est. Speedup	12.82%	13.08%	−0.26%
 </pre>
+
+|Metric|	Pinned|	Pageable|	Delta|
+|------|--------|---------|------|
+|Warp Cycles Per Issued Instruction|	131.17|	130.98|	+0.19|
+|Avg. Active Threads Per Warp|	32|	32|	identical|
+|Avg. Not Predicated Off Threads|	30.12|	30.12|	identical|
+|Long Scoreboard Stalls|	120.2 cycles|	120.2 cycles|	identical|
+|Long Scoreboard % of total|	91.6%	|91.8%|	−0.2%|
+|Est. Speedup|	12.82%|	13.08%|	−0.26%|
+
 ____________________________________________________________________________________________________
 Warp State (All Cycles)
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/a880b968-d5c0-4051-863f-c469ea8fc05d" />
 
 <pre>
 
-Visually indistinguishable from pageable. Long Scoreboard bar at ~120 cycles, Short Scoreboard, Wait, Drain all identically small.
+Visually indistinguishable from pageable. Long Scoreboard bar at ~120 cycles, Short Scoreboard, Wait, Drain 
+all identically small.
 </pre>
 _____________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/006352ce-d170-4087-a6fc-e95875478de6" />
 <pre>
-Achieved occupancy is 80.23% vs 80.40% — a 0.17% difference. This is within the tail-effect variance from block wave scheduling. All the hard limits (registers, shared mem, warps, SM) are identical, as expected — these are compile-time properties of the kernel PTX, completely independent of host memory allocation.
+Achieved occupancy is 80.23% vs 80.40% — a 0.17% difference. This is within the tail-effect variance from
+block wave scheduling. All the hard limits (registers, shared mem, warps, SM) are identical, as expected — 
+these are compile-time properties of the kernel PTX, completely independent of host memory allocation.
 
-  Metric	Pinned	Pageable	Delta
-Theoretical Occupancy	100%	100%	identical
-Achieved Occupancy	80.23%	80.40%	−0.17%
-Achieved Active Warps/SM	38.51	38.59	−0.08
-Block Limit Registers	16	16	identical
-Block Limit Shared Mem	16	16	identical
-Block Limit Warps	6	6	identical
-Block Limit SM	24	24	identical
-Est. Speedup	12.82%	13.08%	−0.26%
+|Metric|	Pinned|	Pageable|	Delta|
+|------|--------|---------|------|
+|Theoretical Occupancy|	100%|	100%|	identical|
+|Achieved Occupancy|	80.23%|	80.40%|	−0.17%|
+|Achieved Active Warps/SM	|38.51|	38.59|	−0.08|
+|Block Limit Registers	|16	|16	|identical|
+|Block Limit Shared Mem	|16|	16|	identical|
+|Block Limit Warps|	6|	6|	identical|
+|Block Limit SM	|24|	24	|identical|
+|Est. Speedup|	12.82%|	13.08%|	−0.26%|
   
 </pre>
 _____________________________________________________________________________________________________
