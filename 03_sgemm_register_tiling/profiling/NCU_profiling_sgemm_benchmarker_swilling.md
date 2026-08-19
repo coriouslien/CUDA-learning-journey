@@ -71,22 +71,36 @@ synchronization costs became visible.
 _______________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1a1696e5-a668-4227-a8a4-2e4320378202" />
-Occupancy halved again: 16.67% vs 33.33%. And crucially, both registers and shared memory now limit to 1 
+<pre>
+Occupancy halved again: 16.67% vs 33.33%. In the "Occupancy" chart, the Theoretical Occupancy has dropped 
+from ~33% down to 16.67%. And crucially, both registers and shared memory now limit to 1 
 block/SM, where before only registers were the constraint (at 2 blocks). The NCU note says: "limited by the 
 number of required registers, and the required amount of shared memory." The swizzle implementation consumed
 significantly more shared memory per block — enough to drop the shared memory block limit from 7 to 1, 
-matching the register limit. This is the occupancy killer.
+matching the register limit. This is the occupancy killer. At the "Impact of Varying Register Count" graph,
+this kernel is now demanding 168 registers per thread (up from 128 in the previous version). Because the 
+RTX 5080 has a strict limit on the total number of registers available per SM, the hardware can now only 
+fit half as many warps onto the chip.
 
 The register count also increased (the dot in Image 7 is at ~168 registers/thread vs. ~128 before). The 
 swizzle implementation added register pressure on top of consuming more shared memory.
+
+The Vicious Cycle: Occupancy is the GPU's primary mechanism for hiding memory latency. When a warp stalls on 
+a memory fetch (Long Scoreboard), the scheduler instantly swaps to another active warp. Because the occupancy
+was halved, the scheduler simply ran out of eligible warps to swap to (indicated by the 57.96% "No Eligible"
+cycles in Scheduler Statistics).
+
+</pre>
 ________________________________________________________________________________________________________
 Impact of Varying Register Court Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/cb5695b4-0ffb-4e91-b7af-941f2f9e3bf2" />
+<pre>
 The curve is completely flat at ~16% across all register counts from 1 to 256 (dot at x≈168). This is telling:
 reducing registers alone cannot improve occupancy at all, because shared memory is now the co-binding 
 constraint at 1 block/SM. No matter how few registers it use, it is still limited to 1 block by shared 
 memory. The baseline had a step-down curve with clear improvement potential; the swizzle version has no 
 headroom from the register axis whatsoever.
+</pre>
 _______________________________________________________________________________________________________
 Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/592d826e-28b1-4d4f-8b1b-f1da930922af" />
