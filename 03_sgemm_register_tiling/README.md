@@ -208,14 +208,10 @@ This register-tiled FP32 series exists in this repository as the documented reas
 
 ### Build ###
 
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-
-### Switch active kernel in CMakeLists.txt: ###
-### Uncomment the desired kernel in SOURCES and KERNEL_SOURCES ###
-
-NCU profile (requires root or `perf_event_paranoid` set):
 <pre>
+cmake --build build
+cmake -S . -B build
+
 ncu \
     -f \
     --section SpeedOfLight \
