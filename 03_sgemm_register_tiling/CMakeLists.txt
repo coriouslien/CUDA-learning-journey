@@ -9,7 +9,8 @@ set(CMAKE_CUDA_ARCHITECTURES "native")
 
 find_package(OpenMP REQUIRED)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+                    ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
 
 set(SOURCES
     src/main.cpp
