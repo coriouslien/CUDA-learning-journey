@@ -36,20 +36,21 @@ occupancy (only ~4 warps/scheduler vs. the 12 maximum).
 _____________________________________________________________________________________________________
 Warp Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f58fedb5-4e7d-48cf-b7c6-410868585cbb" />
-GPU Maximum Warps Per Scheduler: ~12. Theoretical: ~4. Active: ~3.87. Eligible: ~1.85. Issued: 0.61.
-Warp Scheduling: The GPU allows a maximum of 12 warps per scheduler, but this kernel is only theoretically 
-capable of 4 warps per scheduler due to resource limits. Out of the 3.87 active warps per scheduler, only 1.85 
+<pre>
+GPU Warps Scheduler: The GPU allows a maximum of 12 warps per scheduler, but this kernel is only theoretically
+capable of 4 warps per scheduler due to resource limits. Out of the 3.87 active warps per scheduler, only 1.85
 are eligible to issue instructions per cycle, and only 0.61 instructions are actually issued per cycle.
-
+Warp Scheduling ~12. Theoretical: ~4. Active: ~3.87. Eligible: ~1.85. Issued: 0.61.
 The issued/active ratio of 0.61/3.87 ≈ 15.8% means on most cycles, the scheduler has active warps but none are
 ready to issue. This is the classic register-pressure / low-occupancy trap: you have 4 warps but most are
 stalled, so the scheduler sits idle ~38% of cycles. The gap between Eligible (1.85) and Issued (0.61) further
 tells you that even when warps are eligible, the issue rate is far below 1 instruction/cycle — there are 
 structural stalls (dispatch, scoreboard, barriers) preventing back-to-back issuance.
-
+</pre>
 ______________________________________________________________________________________________________
 Warp State Ststistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7dfba5b8-a5a7-4d9f-8684-82690a9cc69a" />
+<pre>
 Warp Cycles Per Issued Instruction: 6.31. All threads active (Avg Active Threads Per Warp = 32, Not Predicated Off = 32 — no divergence).
 
 The dominant flagged stall is Stall Not Selected (Est. Local Speedup: 32.07%) at ~2.0 cycles/instruction.
@@ -59,34 +60,40 @@ are accumulating priority/scheduling overhead — it suggests reducing active wa
 However, this must be read in context: with only ~4 warps/scheduler, "Not Selected" isn't evidence of healthy
 occupancy; it's evidence that the few warps you have are competing for the issue slot against each other while
 all simultaneously stalled on the same resources (shared memory replay, barriers).
+</pre>
 _________________________________________________________________________________________________
 Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c0dae752-18ae-46b3-b721-a6414e1b0465" />
 Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2f31b5a2-a2be-4084-80fe-dc1cb0213a11" />
+<pre>
 The stall breakdown in rough visual order:
-
-Stall Not Selected (~2.0 cycles) — largest bar
-Selected (~1.3 cycles) — actual issued cycles
-Stall Dispatch Stall (~1.2 cycles) — warp ready but dispatch unit busy; structural pipeline pressure
-Stall Short Scoreboard (~0.8 cycles) — waiting for a register written by a recent instruction 
+-Stall Not Selected (~2.0 cycles) — largest bar
+-Selected (~1.3 cycles) — actual issued cycles
+-Stall Dispatch Stall (~1.2 cycles) — warp ready but dispatch unit busy; structural pipeline pressure
+-Stall Short Scoreboard (~0.8 cycles) — waiting for a register written by a recent instruction 
 (typically ~20-cycle latency ops like shared memory loads or integer arithmetic)
-Stall MIO Throttle (~0.75 cycles) — MIO queue (the memory instruction issue pipeline) is saturated; this is
+-Stall MIO Throttle (~0.75 cycles) — MIO queue (the memory instruction issue pipeline) is saturated; this is
 the bank conflict symptom
-Stall Barrier (~0.7 cycles) — __syncthreads() induced wait
-Stall Long Scoreboard (~0.6 cycles) — waiting for a long-latency result (global memory, though very minor here
+-Stall Barrier (~0.7 cycles) — __syncthreads() induced wait
+-Stall Long Scoreboard (~0.6 cycles) — waiting for a long-latency result (global memory, though very minor here
 given L1 hit rate)
-Stall Wait / No Instruction / Math Pipe Throttle — minor
-
-The co-presence of MIO Throttle + Short Scoreboard + Barrier is the canonical register-tiled shared-memory
-GEMM stall signature: bank conflicts inflate MIO queue depth → Short Scoreboard waits for the replayed load 
+-Stall Wait / No Instruction / Math Pipe Throttle is not critical.
+-The co-presence of MIO Throttle, and Short Scoreboard, and Barrier is the canonical register-tiled 
+shared-memory. These stalls follow closely behind. Short scoreboard stalls often correlate with waiting 
+for shared memory or local memory/L1 accesses, while MIO Throttle indicates limits on memory input/output
+instruction queues. 
+-Barrier Stalls: Warps are stalling while waiting for synchronization points (__syncthreads()).  
+-GEMM stall signature: bank conflicts inflate MIO queue depth → Short Scoreboard waits for the replayed load 
 result → Barrier stalls accumulate because all warps converge at __syncthreads() before the next tile.
 
-Your prior analysis in memory already identified the 5-way bank conflicts (271M conflicts) and the catch-22 
+The prior analysis in memory already identified the 5-way bank conflicts (271M conflicts) and the catch-22 
 between tile size, registers, and occupancy. These stall bars confirm it quantitatively.
+</pre>
 _________________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/290cdd34-a3a1-4e09-a5a2-62ccdac5a093" />
+<pre>
 Register pressure is the sole occupancy limiter: 2 blocks/SM. Block limit from registers is 2, everything 
 else is far higher (7 for smem, 6 for warps). At 256 threads/block, 2 blocks = 512 threads = 16 warps out of 
 a theoretical 48 (SM120 max) → 33.33%. NCU's estimated speedup from resolving this is 66.67% — the single
@@ -95,6 +102,7 @@ largest lever in this profile.
 The theoretical and achieved occupancy are very close (33.33% vs. 32.24%), meaning the kernel actually fills
 the SM to its register-limited ceiling with near-perfect efficiency. The problem isn't launch configuration or
 workload imbalance — it's that 128 registers/thread × 256 threads × 2 blocks = the full SM120 register file.
+</pre>
 ________________________________________________________________________________________________________
 Impact of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f677e2bb-3a65-4762-b2d8-979bf389267b" />
@@ -111,10 +119,12 @@ in registers — the tiling strategy itself is what's burning registers.
 ______________________________________________________________________________________________________
 Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4dfb8164-b283-4cfe-b165-e9977fffc77e" />
+<pre>
 The kernel currently uses a block size of 256 threads.(dot at x=256), ~33%. The curve is essentially flat
 between 128–512 threads at 25–33%, with a cliff above 512. While adjusting the block size could impact 
 performance, the graph indicates that standard block sizes (e.g., 128, 256, 512) will not lift the occupancy
 ceiling above roughly 33% as long as the register limit remains the bottleneck.
+</pre>
 _______________________________________________________________________________________________________
 impact of Varying Shared Memory Usage Per Block
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2a381f38-1ee7-4bfe-8f8f-0f0b28b24871" />
