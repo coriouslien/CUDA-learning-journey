@@ -16,7 +16,9 @@ Memory Workload Analysis & Scheduler Statistics
 <pre>
 This is the critical clue. L1/TEX hit rate collapsed from 87.69% to 1.52%. This is not a minor degradation — 
 it's essentially total L1 cache invalidation. Memory throughput jumped from 2.94 GB/s to 109.94 GB/s because 
-now nearly every access misses L1 and goes to L2 or DRAM.
+now nearly every access misses L1 and goes to L2 or DRAM. Because the L1 cache is being missed 98.5% of the
+time, the GPU is forced to fetch data from the L2 cache (which shows a 77.99% hit rate) or directly from DRAM.
+This floods the memory subsystem with requests and severely throttles the bandwidth.
 
 The swizzle transformation broke the spatial locality that the float4 vectorized global loads were 
 exploiting. A swizzle that reorders how data is laid out in shared memory — or how threads index into it — can 
@@ -43,11 +45,19 @@ overall throughput collapses.
 ______________________________________________________________________________________________________
 Warp State
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/65d9a3e9-f36e-4dfb-871a-e34a77e9f3ec" />
+<pre>
 Stall Long Scoreboard is now dominant. This stall type means warps are waiting for the result of a long-
-latency instruction — specifically global memory loads (L2/DRAM access, ~200–800 cycles). In the baseline, 
-Long Scoreboard was minor because L1 hit rate was 87.69% — loads completed quickly. In the swizzle version, 
-L1 hit rate is 1.52%, so nearly every load goes to L2 or DRAM, and warps stall for hundreds of cycles waiting
-for results. This is textbook global memory latency exposure.
+latency instruction — specifically global memory loads (L2/DRAM access, ~200–800 cycles). Stall Long
+Scoreboard dominates, the primary reason the warps are sitting idle is Stall Long Scoreboard. 
+A "Long Scoreboard" stall occurs when a warp requests data from global memory (L2 cache or DRAM) and has to
+wait hundreds of clock cycles for that data to arrive before it can execute the next math instruction. 
+Because the L1 cache hit rate is virtually zero, almost every memory fetch triggers a long-latency lookup.
+The Compute (SM) pipelines are starving because the data isn't arriving fast enough, which is why the 
+overall Compute SOL has dropped to 46.27%
+
+In the baseline, Long Scoreboard was minor because L1 hit rate was 87.69% — loads completed quickly. 
+In the swizzle version, L1 hit rate is 1.52%, so nearly every load goes to L2 or DRAM, and warps stall 
+for hundreds of cycles waiting for results. This is textbook global memory latency exposure.
 
 Stall MIO Throttle decreased somewhat (bank conflicts partially reduced), and Stall Short Scoreboard (which 
 was prominent in the baseline from shared memory replay) largely disappeared — confirming the swizzle did 
@@ -57,6 +67,7 @@ worse than the disease.
 Stall Wait appearing prominently (new in this profile) indicates warps stalling on __syncthreads() barriers 
 while other warps are still stalled on L2 loads — the pipeline is stretched so long that barrier 
 synchronization costs became visible.
+</pre>
 _______________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1a1696e5-a668-4227-a8a4-2e4320378202" />
