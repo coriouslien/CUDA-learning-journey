@@ -96,27 +96,32 @@ The theoretical and achieved occupancy are very close (33.33% vs. 32.24%), meani
 the SM to its register-limited ceiling with near-perfect efficiency. The problem isn't launch configuration or
 workload imbalance — it's that 128 registers/thread × 256 threads × 2 blocks = the full SM120 register file.
 ________________________________________________________________________________________________________
+Impact of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f677e2bb-3a65-4762-b2d8-979bf389267b" />
 The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. Your kernel is at 
 ~128 registers/thread (dot at x≈128), sitting at ~33%. To get to 50% you'd need ~80 registers; to reach 66% 
 roughly ~64 registers. These are aggressive reductions for a register-tiled kernel that explicitly accumulates 
 in registers — the tiling strategy itself is what's burning registers.
 ______________________________________________________________________________________________________
+Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4dfb8164-b283-4cfe-b165-e9977fffc77e" />
 Current block: 256 threads (dot at x=256), ~33%. The curve is essentially flat between 128–512 threads at 
 25–33%, with a cliff above 512. Block size is not a useful tuning knob here because register count dominates —
 changing block size just shifts which register-limit step you land on.
 _______________________________________________________________________________________________________
+impact of Varying Shared Memory Usage Per Block
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/2a381f38-1ee7-4bfe-8f8f-0f0b28b24871" />
 Current usage (dot): ~9.5KB/block at ~33%. The step-down at ~32KB corresponds to running out of the L1/shared 
 memory partition. The curve shows the kernel is not shared-memory-limited until well above the current usage — 
 smem is not the constraint, registers are.
 _________________________________________________________________________________________________________
+Impact of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e8174cbd-7f66-4a5a-87d7-f1e6400dafcc" />
 
 Current barriers: ~2, at ~33%. The drop at ~12 barriers is the SM barrier resource limit for SM120 
 (24 total / 2 blocks = 12/block). Not a constraint at current usage.
 _________________________________________________________________________________________________________
+Impact of Varying Cluster Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ef240166-bd8c-4639-92c6-0dd41e3f9209" />
 
 Branch Efficiency: 100%    Avg. Divergent Branches: 0
