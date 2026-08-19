@@ -3,6 +3,7 @@
 03_sgemm_register_tiling
 GPU Speed Of Light Throughput
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/8a9a6097-3825-43c3-addd-20af583adbe7" />
+<pre>
 -Throughput Bottleneck: The workload is currently memory-bound rather than compute-bound. The Memory 
 Throughput is at 72.94%, while Compute (SM) Throughput is at 58.01%.
 -The bottleneck is Cache utilization, L1/TEX at 77%, not DRAM (0.31%) or L2 (1.44%). The memory subsystem is
@@ -13,6 +14,7 @@ successfully being served by the L1 cache. The L1/TEX Hit Rate is reported at 87
 numbers confirm data is largely recycled within L1
 — this is the shared memory / register file pressure picture, not a bandwidth wall against HBM. 
 The 58% compute SOL tells you the SMs are not fully pipelined. 
+</pre>
 ___________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/41c4aaab-dc9e-4445-bb18-7428f710ad98" />
