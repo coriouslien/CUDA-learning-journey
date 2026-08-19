@@ -6,12 +6,14 @@ GPU Speed Of Light Throughput
 <pre>
 -Throughput Bottleneck: The workload is currently memory-bound rather than compute-bound. The Memory 
 Throughput is at 72.94%, while Compute (SM) Throughput is at 58.01%.
+  
 -The bottleneck is Cache utilization, L1/TEX at 77%, not DRAM (0.31%) or L2 (1.44%). The memory subsystem is
 heavily relying on the L1/TEX cache, which shows 77.09% throughput. The L2 Cache Throughput (1.44%) and DRAM
 Throughput (0.31%) are extremely low in comparison, indicating that the vast majority of memory accesses are
 successfully being served by the L1 cache. The L1/TEX Hit Rate is reported at 87.69%, and the L2 Hit Rate is 
 91.93%. NCU flags "High Memory Throughput: memory more heavily utilized than compute." The near-zero L2/DRAM 
-numbers confirm data is largely recycled within L1
+numbers confirm data is largely recycled within L1.
+  
 — this is the shared memory / register file pressure picture, not a bandwidth wall against HBM. 
 The 58% compute SOL tells you the SMs are not fully pipelined. 
 </pre>
