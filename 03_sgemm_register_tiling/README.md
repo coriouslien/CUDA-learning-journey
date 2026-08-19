@@ -163,8 +163,6 @@ Uncoalesced Shared:      not flagged (swizzle did eliminate smem conflicts)
 The swizzle achieved its stated goal — shared memory bank conflicts gone — but the
 cost (occupancy, L1 hit rate) was far higher than the benefit.
 
-### Why it is kept ###
-
 Shows the full diagnostic arc: hypothesis → implementation → NCU measurement →
 root cause identification → corrected implementation → NCU measurement again →
 conclusion. The fact that the fix made things worse twice, for different reasons
