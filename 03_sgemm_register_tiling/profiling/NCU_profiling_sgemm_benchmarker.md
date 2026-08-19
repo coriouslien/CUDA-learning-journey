@@ -3,10 +3,16 @@
 03_sgemm_register_tiling
 GPU Speed Of Light Throughput
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/8a9a6097-3825-43c3-addd-20af583adbe7" />
-The bottleneck is L1/TEX at 77%, not DRAM (0.31%) or L2 (1.44%). NCU flags "High Memory Throughput: memory
-more heavily utilized than compute." The near-zero L2/DRAM numbers confirm data is largely recycled within L1
+-Throughput Bottleneck: The workload is currently memory-bound rather than compute-bound. The Memory 
+Throughput is at 72.94%, while Compute (SM) Throughput is at 58.01%.
+-The bottleneck is Cache utilization, L1/TEX at 77%, not DRAM (0.31%) or L2 (1.44%). The memory subsystem is
+heavily relying on the L1/TEX cache, which shows 77.09% throughput. The L2 Cache Throughput (1.44%) and DRAM
+Throughput (0.31%) are extremely low in comparison, indicating that the vast majority of memory accesses are
+successfully being served by the L1 cache. The L1/TEX Hit Rate is reported at 87.69%, and the L2 Hit Rate is 
+91.93%. NCU flags "High Memory Throughput: memory more heavily utilized than compute." The near-zero L2/DRAM 
+numbers confirm data is largely recycled within L1
 — this is the shared memory / register file pressure picture, not a bandwidth wall against HBM. 
-The 58% compute SOL tells you the SMs are not fully pipelined.
+The 58% compute SOL tells you the SMs are not fully pipelined. 
 ___________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/41c4aaab-dc9e-4445-bb18-7428f710ad98" />
@@ -26,6 +32,9 @@ ________________________________________________________________________________
 Warp Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f58fedb5-4e7d-48cf-b7c6-410868585cbb" />
 GPU Maximum Warps Per Scheduler: ~12. Theoretical: ~4. Active: ~3.87. Eligible: ~1.85. Issued: 0.61.
+Warp Scheduling: The GPU allows a maximum of 12 warps per scheduler, but this kernel is only theoretically 
+capable of 4 warps per scheduler due to resource limits. Out of the 3.87 active warps per scheduler, only 1.85 
+are eligible to issue instructions per cycle, and only 0.61 instructions are actually issued per cycle.
 
 The issued/active ratio of 0.61/3.87 ≈ 15.8% means on most cycles, the scheduler has active warps but none are
 ready to issue. This is the classic register-pressure / low-occupancy trap: you have 4 warps but most are
