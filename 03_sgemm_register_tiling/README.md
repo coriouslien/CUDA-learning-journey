@@ -216,17 +216,17 @@ cmake --build build
 
 NCU profile (requires root or `perf_event_paranoid` set):
 <pre>
-ncu \\
-    -f \\
-    --section SpeedOfLight \\
-    --section MemoryWorkloadAnalysis \\
-    --section WarpStateStats \\
-    --section SourceCounters \\
-    --section SchedulerStats \\
-    --section Occupancy \\
-    --import-source yes \\
-    --export ./build/sgemm_benchmarker \\
-    --verbose \\
+ncu \
+    -f \
+    --section SpeedOfLight \
+    --section MemoryWorkloadAnalysis \
+    --section WarpStateStats \
+    --section SourceCounters \
+    --section SchedulerStats \
+    --section Occupancy \
+    --import-source yes \
+    --export ./build/sgemm_benchmarker \
+    --verbose \
     .build/sgemm_benchmarker
 </pre>
 
