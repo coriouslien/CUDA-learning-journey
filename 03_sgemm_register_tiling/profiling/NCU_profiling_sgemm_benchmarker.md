@@ -19,7 +19,8 @@ The 58% compute SOL tells you the SMs are not fully pipelined.
 </pre>
 ___________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statics
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/41c4aaab-dc9e-4445-bb18-7428f710ad98" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ca291bca-3a70-4746-ac94-ec4c02196587" />
+<pre>
 L1 hit rate of 87.69% and L2 of 91.93% are both very high — almost nothing reaches DRAM. This is consistent 
 with your memory note: you achieved this after applying float4 vectorized global loads. The 2.94 GB/s 
 effective memory throughput is extremely low for an 8192³ problem, confirming essentially everything is served
@@ -31,7 +32,7 @@ The Scheduler Statistics show Active Warps Per Scheduler: 3.87, Eligible Warps: 
 Scheduler: 0.61, and No Eligible: 38.71%. The 38.71% no-eligible rate is a hard signal that warps are 
 regularly stalled and the scheduler has nothing to issue — this is the latency hiding failure caused by low 
 occupancy (only ~4 warps/scheduler vs. the 12 maximum).
-
+</pre>
 _____________________________________________________________________________________________________
 Warp Per Scheduler
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/f58fedb5-4e7d-48cf-b7c6-410868585cbb" />
