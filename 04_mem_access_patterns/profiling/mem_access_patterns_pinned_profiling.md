@@ -35,21 +35,24 @@ This is measurement noise, not a meaningful kernel difference.
 The L2 hit rate going from 0.00% to 0.01% is also noise — one or two extra L2 hits across 2²⁸ accesses is
 statistically zero.
 
-The scheduler numbers are bit-for-bit identical. Active warps, eligible warps, issued warps, no-eligible percentage — all match pageable to two decimal places. This is the definitive confirmation: pinned memory has zero effect on kernel execution. The scheduler does not know or care how the host memory backing was allocated.
-
-  Metric	Pinned	Pageable	Delta
-Memory Throughput	825.02 GB/s	822.54 GB/s	+2.48 GB/s
-L1/TEX Hit Rate	0%	0%	none
-L2 Hit Rate	0.01%	0.00%	negligible
-Mem Busy	19.90%	19.68%	+0.22%
-Max Bandwidth	87.18%	86.92%	+0.26%
-Mem Pipes Busy	17.04%	16.87%	+0.17%
-Active Warps/Scheduler	9.51	9.51	identical
-Eligible Warps/Scheduler	0.08	0.08	identical
-Issued Warp/Scheduler	0.07	0.07	identical
-No Eligible [%]	92.75%	92.74%	+0.01%
-One or More Eligible [%]	7.25%	7.26%	−0.01%
+The scheduler numbers are bit-for-bit identical. Active warps, eligible warps, issued warps, no-eligible percentage — 
+all match pageable to two decimal places. This is the definitive confirmation: pinned memory has zero effect on kernel execution.
+The scheduler does not know or care how the host memory backing was allocated.
 </pre>
+|Metric|	Pinned|	Pageable|	Delta|
+|------|--------|---------|------|
+|Memory Throughput|	825.02 GB/s|	822.54 GB/s|	+2.48 GB/s|
+L1/TEX Hit Rate|	0%|	0%|	none|
+|L2 Hit Rate|	0.01%|	0.00%|	negligible|
+|Mem Busy	|19.90%	|19.68%|	+0.22%|
+|Max Bandwidth|	87.18%|	86.92%	|+0.26%|
+|Mem Pipes Busy|	17.04%|	16.87%|	+0.17%|
+|Active Warps/Scheduler|	9.51	|9.51|	identical|
+|Eligible Warps/Scheduler|	0.08|	0.08|	identical|
+|Issued Warp/Scheduler|	0.07|	0.07|	identical|
+|No Eligible [%]	|92.75%	|92.74%	|+0.01%|
+|One or More Eligible [%]	|7.25%	|7.26%	|−0.01%|
+
 
 ____________________________________________________________________________________________________
 Warp Per Scheduler
