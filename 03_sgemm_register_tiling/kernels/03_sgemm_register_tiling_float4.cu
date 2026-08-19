@@ -1,4 +1,4 @@
-// 03_sgemm_register_tiling.cu
+// 03_sgemm_register_tiling_float4.cu
 
 #include "sgemm_config.h"
 #include <cstdio>
