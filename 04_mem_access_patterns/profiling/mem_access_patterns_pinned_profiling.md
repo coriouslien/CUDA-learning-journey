@@ -12,16 +12,16 @@ which NCU doesn't profile. That's where you'd see the real gap.
 </pre>
 |Metric|	Pinned	|Pageable	|Delta|
 |------|----------|---------|-----|
-Duration	2.56 ms	2.58 ms	−0.02 ms
-Elapsed Cycles	5,870,526	5,929,855	−59,329
-SM Active Cycles	5,840,120	5,829,072	+11,048
-Compute (SM) Throughput	17.04%	16.87%	+0.17%
-Memory Throughput	87.18%	86.92%	+0.26%
-DRAM Throughput	87.18%	86.92%	+0.26%
-L1/TEX Cache Throughput	15.49%	15.34%	+0.15%
-L2 Cache Throughput	23.13%	22.92%	+0.21%
-SM Frequency	2.29 GHz	2.29 GHz	identical
-DRAM Frequency	14.79 GHz	14.79 GHz	identical
+|Duration	|2.56 ms	|2.58 ms	|−0.02 ms|
+|Elapsed Cycles|	5,870,526|	5,929,855|	−59,329|
+|SM Active Cycles	|5,840,120	|5,829,072	|+11,048|
+|Compute (SM) Throughput|	17.04%|	16.87%|	+0.17%|
+|Memory Throughput|	87.18%|	86.92%|	+0.26%|
+|DRAM Throughput	|87.18%	|86.92%	|+0.26%|
+|L1/TEX Cache Throughput|	15.49%	|15.34%|	+0.15%|
+|L2 Cache Throughput|	23.13%	|22.92%	|+0.21%|
+|SM Frequency	|2.29 GHz|	2.29 GHz|	identical|
+|DRAM Frequency	|14.79 GHz|	14.79 GHz	|identical|
 
 
 ____________________________________________________________________________________________________
