@@ -102,7 +102,7 @@ Occupancy
 Achieved occupancy is 80.23% vs 80.40% — a 0.17% difference. This is within the tail-effect variance from
 block wave scheduling. All the hard limits (registers, shared mem, warps, SM) are identical, as expected — 
 these are compile-time properties of the kernel PTX, completely independent of host memory allocation.
-
+</pre>
 |Metric|	Pinned|	Pageable|	Delta|
 |------|--------|---------|------|
 |Theoretical Occupancy|	100%|	100%|	identical|
@@ -114,7 +114,7 @@ these are compile-time properties of the kernel PTX, completely independent of h
 |Block Limit SM	|24|	24	|identical|
 |Est. Speedup|	12.82%|	13.08%|	−0.26%|
   
-</pre>
+
 _____________________________________________________________________________________________________
 Impact of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1bcad814-b4f8-46cf-9f36-ad64ddc6f469" />
