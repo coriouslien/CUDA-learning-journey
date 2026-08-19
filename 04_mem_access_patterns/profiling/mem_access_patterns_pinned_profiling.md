@@ -9,7 +9,7 @@ path; once the data is resident on the GPU, it makes no difference to the kernel
 
 The actual benefit of pinned memory shows up in your cudaEventElapsedTime output for H2D transfers — 
 which NCU doesn't profile. That's where you'd see the real gap.
-
+</pre>
 |Metric|	Pinned	|Pageable	|Delta|
 |------|----------|---------|-----|
 Duration	2.56 ms	2.58 ms	−0.02 ms
@@ -22,7 +22,7 @@ L1/TEX Cache Throughput	15.49%	15.34%	+0.15%
 L2 Cache Throughput	23.13%	22.92%	+0.21%
 SM Frequency	2.29 GHz	2.29 GHz	identical
 DRAM Frequency	14.79 GHz	14.79 GHz	identical
-</pre>
+
 
 ____________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statistics
