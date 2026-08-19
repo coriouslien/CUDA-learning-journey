@@ -5,7 +5,7 @@ Matrix size: 4096 × 4096 × 4096 (FP32)
 Block tile: BM=128, BN=128, BK=8, TM=8, TN=8 · Threads: dim3(16, 16) = 256/block
 
 
-**Results at a Glance**
+**Results:**
 
 | Kernel | Time   | TFLOPS | Registers | Blocks/SM | Occupancy | NCU Primary Stall |
 |--------|------|--------|-----------|-----------|-----------|-------------------|
@@ -16,6 +16,12 @@ Block tile: BM=128, BN=128, BK=8, TM=8, TN=8 · Threads: dim3(16, 16) = 256/bloc
 The baseline kernel wins. The two attempted improvements both regress — and understanding
 precisely *why* is the point of keeping all three files.
 
+### Project Structure ###
+src/main.cpp: Entry point initializing the benchmark environment.
+
+src/warmup.cu: Executes a dummy computational kernel to spin up the GPU from idle power states.
+
+src/sgemm_regs_tiling_runner.cu: The primary benchmarking harness. Handles host/device memory allocation, cuBLAS reference checks, and iterative kernel launches
 
 ### Kernel 1 — `03_sgemm_register_tiling.cu` (Baseline, Best Result) ###
 
