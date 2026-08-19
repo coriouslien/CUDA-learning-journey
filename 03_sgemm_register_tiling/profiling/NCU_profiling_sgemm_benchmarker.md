@@ -14,7 +14,7 @@ successfully being served by the L1 cache. The L1/TEX Hit Rate is reported at 87
 91.93%. NCU flags "High Memory Throughput: memory more heavily utilized than compute." The near-zero L2/DRAM 
 numbers confirm data is largely recycled within L1.
   
-— this is the shared memory / register file pressure picture, not a bandwidth wall against HBM. 
+— This is the shared memory/register file pressure picture, not a bandwidth wall against HBM. 
 The 58% compute SOL tells you the SMs are not fully pipelined. 
 </pre>
 ___________________________________________________________________________________________________
