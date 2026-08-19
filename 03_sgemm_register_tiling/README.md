@@ -5,22 +5,21 @@ Matrix size: 4096 × 4096 × 4096 (FP32)
 Block tile: BM=128, BN=128, BK=8, TM=8, TN=8 · Threads: dim3(16, 16) = 256/block
 
 
-** Results at a Glance **
+**Results at a Glance**
 
-| Kernel | Time | TFLOPS | Registers | Blocks/SM | Occupancy | NCU Primary Stall |
+| Kernel | Time   | TFLOPS | Registers | Blocks/SM | Occupancy | NCU Primary Stall |
 |--------|------|--------|-----------|-----------|-----------|-------------------|
-| `03_sgemm_register_tiling.cu` | **5.69 ms** | **~28** | 128 | **2** | **33.3%** | MIO Throttle |
+| `03_sgemm_register_tiling.cu` | 5.69 ms | ~28 | 128 | 2 | 33.3% | MIO Throttle |
 | `03_sgemm_register_tiling_float4.cu` | ~8.0 ms | ~17 | 142 | 1 | 16.7% | Long Scoreboard |
 | `03_sgemm_register_tiling_swizzing.cu` | ~9.3 ms | ~17 | 128–168 | 1 | 16.7% | Long Scoreboard |
 
 The baseline kernel wins. The two attempted improvements both regress — and understanding
 precisely *why* is the point of keeping all three files.
 
----
 
-## Kernel 1 — `03_sgemm_register_tiling.cu` (Baseline, Best Result)
+### Kernel 1 — `03_sgemm_register_tiling.cu` (Baseline, Best Result) ###
 
-### What it does
+**What it does** 
 
 Register-tiled SGEMM with 2D thread mapping (`dim3(16,16)`). Each thread owns an
 8×8 register tile (`c_regs[TM][TN]`). The outer K-loop loads BM×BK and BK×BN tiles
@@ -28,9 +27,9 @@ into shared memory (`s_A`, `s_B`), then each thread accumulates its 8×8 output 
 an outer-product loop over BK=8 k-slices. `s_B` is read via two `float4` loads per
 thread per k-iteration.
 
-### NCU findings (profiled, `sgemm_benchmarker.ncu-rep`)
+### NCU findings (profiled, `sgemm_benchmarker.ncu-rep`) ###
 
-```
+
 Compute (SM) Throughput:   58.01%
 Memory Throughput:         72.94%
 L1/TEX Cache Throughput:   77.09%   ← bottleneck
@@ -45,9 +44,9 @@ No Eligible [%]:           38.71%
 Top stalls: MIO Throttle, Short Scoreboard, Stall Not Selected
 Uncoalesced Shared Accesses — Est. Speedup: 36.04%
   → 268M excessive wavefronts (38% of total) from s_B read-path bank conflicts
-```
 
-### What the profile means
+
+### What the profile means ###
 
 The kernel is register-limited at exactly 2 blocks/SM — 128 registers × 256 threads
 = 32,768 = half of SM120's 65,536-register file. This is the maximum occupancy
@@ -61,30 +60,27 @@ occupancy gives the scheduler 3.87 active warps per scheduler** — enough to hi
 significant portion of the stall latency by switching warps. Reducing occupancy
 below this level, even to eliminate the bank conflicts entirely, results in a net loss.
 
-### Why it is kept
+### Why it is kept ###
 
 Best FP32 wall-clock result for this tile configuration. The NCU report provides a
 clean baseline for comparison against every subsequent variant.
 
----
 
-## Kernel 2 — `03_sgemm_register_tiling_float4.cu` (Float4 Attempt)
+### Kernel 2 — `03_sgemm_register_tiling_float4.cu` (Float4 Attempt) ###
 
-### What it does
+### What it does ###
 
 Identical to Kernel 1 except `compute_slice` reads `s_B` using `float4` reinterpret
 casts instead of scalar indexing. The intent was to replace 8 scalar `LDS`
 instructions per k-iteration with 2 `LDS.128` instructions, eliminating the bank
 conflicts identified in the Kernel 1 NCU report.
 
-### Why it does not help — static analysis
+### Why it does not help — static analysis ###
 
 With `dim3(16,16)` and `TN=8`, the two float4 reads per thread per k-iteration are:
 
-```
 b0 = s_B[k][tx * 8]       — column tx*8,   bank = (tx*8) % 32
 b1 = s_B[k][tx * 8 + 4]   — column tx*8+4, bank = (tx*8+4) % 32
-```
 
 For tx ∈ [0,15], the b0 banks are: 0, 8, 16, 24, 0, 8, 16, 24, ... The two
 halves of the warp (ty=0 and ty=1 share the same tx range) issue identical
@@ -92,9 +88,8 @@ addresses → **hardware broadcast, single transaction, zero conflict**. The flo
 read path in Kernel 1 was *already conflict-free*. There was no bank conflict to fix
 on the read side.
 
-### The register trap
+### The register trap ###
 
-```
 ptxas: Used 142 registers, 8192 bytes smem
 
 142 regs × 256 threads = 36,352 > 32,768 (half of 65,536)
@@ -110,18 +105,16 @@ address scalars kept live across the unrolled k-loop — push the block over the
 because with only 2 warps/scheduler, there is nothing to issue while warps wait for
 L2/DRAM to service the strided `load_s_A` global reads.
 
-### Why it is kept
+### Why it is kept ###
 
 Demonstrates the register-occupancy catch-22 precisely: an optimization that is
 correct in isolation (float4 reads, zero bank conflicts) regresses overall
 performance because the hardware resource it consumes (registers) costs more than
 the stalls it eliminates. This is the most important lesson from this kernel family.
 
----
+### Kernel 3 — `03_sgemm_register_tiling_swizzing.cu` (Swizzle Attempt) ###
 
-## Kernel 3 — `03_sgemm_register_tiling_swizzing.cu` (Swizzle Attempt)
-
-### What it does
+### What it does ###
 
 Attempted to eliminate the shared memory bank conflicts from Kernel 1 by applying
 an XOR swizzle to the `s_B` write addresses in `load_s_B` and mirroring the same
@@ -138,7 +131,7 @@ Float4 global loads in `load_s_B`. Float4 reads in `compute_slice` with
 
 Both versions profiled at ~9.1–9.3ms — slower than the baseline.
 
-### Why both versions fail
+### Why both versions fail ###
 
 **v1 — Wrong swizzle formula.**
 `s_col ^ ((s_col >> 5) << 2)` applies a mask of {0, 4, 8, 12} to columns in groups
@@ -158,9 +151,8 @@ loads in `load_s_B` changed from consecutive (Kernel 1: coalesced) to strided
 (v2: chunk-based), **collapsing L1/TEX hit rate from 87.69% to 1.52%** and making
 Long Scoreboard the dominant stall.
 
-### NCU signature shared by both swizzle versions
+### NCU signature shared by both swizzle versions ###
 
-```
 L1/TEX Hit Rate:         1.52%   (vs 87.69% in Kernel 1)
 Block Limit Registers:   1        (co-limited with shared mem)
 Theoretical Occupancy:   16.67%
@@ -173,7 +165,7 @@ Uncoalesced Shared:      not flagged (swizzle did eliminate smem conflicts)
 The swizzle achieved its stated goal — shared memory bank conflicts gone — but the
 cost (occupancy, L1 hit rate) was far higher than the benefit.
 
-### Why it is kept
+### Why it is kept ###
 
 Shows the full diagnostic arc: hypothesis → implementation → NCU measurement →
 root cause identification → corrected implementation → NCU measurement again →
@@ -182,13 +174,11 @@ each time, is the most technically detailed section of this repository. A review
 who reads the commit history and the NCU reports sees the methodology, not just
 the outcome.
 
----
-
-## The Core Lesson: The Register-Occupancy Catch-22
+### The Core Lesson: The Register-Occupancy Catch-22 ###
 
 Every optimization attempt in Kernels 2 and 3 hit the same wall:
 
-```
+
 Eliminating shared memory bank conflicts requires:
   → float4 reads (need float4 temporaries in registers)
   → swizzle address computation (needs integer temporaries in registers)
@@ -198,7 +188,7 @@ Extra registers push beyond the 2-block/SM threshold:
   → 142 regs × 256 threads = 36,352 = only 1 block   ✗
 
 Halved occupancy costs more than eliminated bank conflicts save.
-```
+
 
 This catch-22 is not fixable within the FP32 register-tiled SGEMM paradigm at this
 tile size. The path out is offloading the accumulator to hardware — which is exactly
@@ -209,9 +199,9 @@ breaking the occupancy constraint entirely.
 This register-tiled FP32 series exists in this repository as the documented reason
 *why* WMMA was the necessary next step, not just the obvious one.
 
----
 
-## Hardware Context
+
+### Hardware Context ###
 
 | Resource | SM120 (RTX 5080) | Constraint for this kernel |
 |----------|-----------------|---------------------------|
@@ -222,23 +212,19 @@ This register-tiled FP32 series exists in this repository as the documented reas
 | SM frequency | 2.29 GHz | |
 | DRAM frequency | 14.79 GHz | |
 
----
 
-## Build
+### Build ###
 
-```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-# Switch active kernel in CMakeLists.txt:
-# Uncomment the desired kernel in SOURCES and KERNEL_SOURCES
-```
+### Switch active kernel in CMakeLists.txt: ###
+### Uncomment the desired kernel in SOURCES and KERNEL_SOURCES ###
 
 NCU profile (requires root or `perf_event_paranoid` set):
 
-```bash
 ncu --set full \
     --import-source yes \
     -o sgemm_benchmarker \
     ./build/sgemm_benchmarker
-```
+
