@@ -25,7 +25,6 @@ src/sgemm_regs_tiling_runner.cu: The primary benchmarking harness. Handles host/
 
 ### Kernel 1 — `03_sgemm_register_tiling.cu` (Baseline, Best Result) ###
 
-
 Foundational register tiling implementation utilizing 1D thread mapping and vectorized
 global loads.
 Register-tiled SGEMM with 2D thread mapping (`dim3(16,16)`). Each thread owns an
@@ -67,14 +66,11 @@ occupancy gives the scheduler 3.87 active warps per scheduler** — enough to hi
 significant portion of the stall latency by switching warps. Reducing occupancy
 below this level, even to eliminate the bank conflicts entirely, results in a net loss.
 
-### Why it is kept ###
-
 Best FP32 wall-clock result for this tile configuration. The NCU report provides a
 clean baseline for comparison against every subsequent variant.
 
 
 ### Kernel 2 — `03_sgemm_register_tiling_float4.cu` (Float4 Attempt) ###
-
 
 Enhances the baseline by vectorizing the inner-loop shared memory loads into registers via float4 instructions.
 Identical to Kernel 1 except `compute_slice` reads `s_B` using `float4` reinterpret
@@ -104,7 +100,6 @@ ptxas: Used 142 registers, 8192 bytes smem
 → Theoretical Occupancy: 16.67% (half of Kernel 1)
 → Active Warps/Scheduler: 2.00 (vs 3.87)
 → No Eligible [%]: ~58% (vs 38.71%)
-```
 
 The extra 14 registers — from float4 temporaries (`b0`, `b1`) and associated
 address scalars kept live across the unrolled k-loop — push the block over the
@@ -112,15 +107,12 @@ address scalars kept live across the unrolled k-loop — push the block over the
 because with only 2 warps/scheduler, there is nothing to issue while warps wait for
 L2/DRAM to service the strided `load_s_A` global reads.
 
-### Why it is kept ###
-
 Demonstrates the register-occupancy catch-22 precisely: an optimization that is
 correct in isolation (float4 reads, zero bank conflicts) regresses overall
 performance because the hardware resource it consumes (registers) costs more than
 the stalls it eliminates. This is the most important lesson from this kernel family.
 
 ### Kernel 3 — `03_sgemm_register_tiling_swizzing.cu` (Swizzle Attempt) ###
-
 
 Explores XOR layout permutations to mitigate shared memory bank conflicts during matrix accumulation.
 Attempted to eliminate the shared memory bank conflicts from Kernel 1 by applying
@@ -167,7 +159,6 @@ Active Warps/Scheduler:  2.00
 No Eligible [%]:         ~58–59%
 Dominant stall:          Long Scoreboard (global load latency exposure)
 Uncoalesced Shared:      not flagged (swizzle did eliminate smem conflicts)
-```
 
 The swizzle achieved its stated goal — shared memory bank conflicts gone — but the
 cost (occupancy, L1 hit rate) was far higher than the benefit.
@@ -185,7 +176,6 @@ the outcome.
 
 Every optimization attempt in Kernels 2 and 3 hit the same wall:
 
-
 Eliminating shared memory bank conflicts requires:
   → float4 reads (need float4 temporaries in registers)
   → swizzle address computation (needs integer temporaries in registers)
@@ -196,7 +186,6 @@ Extra registers push beyond the 2-block/SM threshold:
 
 Halved occupancy costs more than eliminated bank conflicts save.
 
-
 This catch-22 is not fixable within the FP32 register-tiled SGEMM paradigm at this
 tile size. The path out is offloading the accumulator to hardware — which is exactly
 what WMMA (Tensor Core) kernels do. `HMMA.16816.F32` instructions maintain the 8×8
@@ -205,7 +194,6 @@ breaking the occupancy constraint entirely.
 
 This register-tiled FP32 series exists in this repository as the documented reason
 *why* WMMA was the necessary next step, not just the obvious one.
-
 
 
 ### Hardware Context ###
@@ -230,8 +218,19 @@ cmake --build build
 
 NCU profile (requires root or `perf_event_paranoid` set):
 
-ncu --set full \
+ncu \
+    -f \
+    --section SpeedOfLight \
+    --section MemoryWorkloadAnalysis \
+    --section WarpStateStats \
+    --section SourceCounters \
+    --section SchedulerStats \
+    --section Occupancy \
     --import-source yes \
-    -o sgemm_benchmarker \
-    ./build/sgemm_benchmarker
+    --export ./build/sgemm_benchmarker \
+    --verbose \
+    .build/sgemm_benchmarker
+
+
+
 
