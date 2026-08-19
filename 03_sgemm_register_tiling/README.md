@@ -209,8 +209,8 @@ This register-tiled FP32 series exists in this repository as the documented reas
 ### Build ###
 
 <pre>
-cmake --build build
 cmake -S . -B build
+cmake --build build
 
 ncu \
     -f \
