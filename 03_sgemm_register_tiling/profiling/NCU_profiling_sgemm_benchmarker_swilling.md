@@ -13,15 +13,17 @@ else went badly wrong in the process.
 ______________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/6325170b-84dd-4645-9433-f79a06c27bcc" />
+<pre>
 This is the critical clue. L1/TEX hit rate collapsed from 87.69% to 1.52%. This is not a minor degradation — 
 it's essentially total L1 cache invalidation. Memory throughput jumped from 2.94 GB/s to 109.94 GB/s because 
 now nearly every access misses L1 and goes to L2 or DRAM.
 
-The swizzle transformation broke the spatial locality that your float4 vectorized global loads were 
+The swizzle transformation broke the spatial locality that the float4 vectorized global loads were 
 exploiting. A swizzle that reorders how data is laid out in shared memory — or how threads index into it — can 
 inadvertently destroy the access pattern that the L1 prefetcher or coalescing logic depended on for the global 
 loads, depending on how the swizzle was applied. The L2 hit rate at 77.99% suggests most misses are served 
 from L2 rather than DRAM, but L2 latency (~200 cycles) vs L1 (~32 cycles) is still devastating.
+</pre>
 ______________________________________________________________________________________________________
 Warps Per Scheduler Chart
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/cc124c3a-f4a1-4cec-9b10-23c324b68c17" />
@@ -71,7 +73,7 @@ Impact of Varying Register Court Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/cb5695b4-0ffb-4e91-b7af-941f2f9e3bf2" />
 The curve is completely flat at ~16% across all register counts from 1 to 256 (dot at x≈168). This is telling:
 reducing registers alone cannot improve occupancy at all, because shared memory is now the co-binding 
-constraint at 1 block/SM. No matter how few registers you use, you're still limited to 1 block by shared 
+constraint at 1 block/SM. No matter how few registers it use, it is still limited to 1 block by shared 
 memory. The baseline had a step-down curve with clear improvement potential; the swizzle version has no 
 headroom from the register axis whatsoever.
 _______________________________________________________________________________________________________
@@ -87,7 +89,7 @@ Impact of Varying Shared Memory Usage Per Block
 Current smem (dot at ~9.5KB, ~16%). The curve is completely flat from the minimum all the way to ~98KB, then
 falls to zero. This means reducing shared memory per block does not improve occupancy — the register limit is 
 equally binding at 1 block/SM. Both limits are simultaneously at 1, so relaxing either one alone is useless;
-you'd have to reduce both. This is the true double-bind.
+it would have to reduce both. This is the true double-bind.
 _______________________________________________________________________________________________________
 Impact Of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/befce936-088b-4541-b975-9f5042f3a1dc" />
@@ -123,7 +125,7 @@ The swizzle implementation is correct in intent but regressed on two axes simult
 8. or spatial locality that the L1 prefetcher was exploiting. Nearly every global load now misses to L2, and
 9. Long Scoreboard stalls dominate.
 
-The net result: you traded a 36% bank conflict penalty for a near-total L1 eviction, and the L1 miss penalty 
+The net result: it traded a 36% bank conflict penalty for a near-total L1 eviction, and the L1 miss penalty 
 is far more expensive.
 
 What to Fix
