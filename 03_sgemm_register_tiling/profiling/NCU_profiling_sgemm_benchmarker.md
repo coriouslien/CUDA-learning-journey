@@ -160,22 +160,46 @@ Branch Efficiency: 100%    Avg. Divergent Branches: 0
 Uncoalesced Shared Accesses — Est. Speedup: 36.04%
 268,435,456 excessive wavefronts (38% of total 704,643,072)
 
-This is the smoking gun for the bank conflicts. 38% of all shared memory wavefronts are replay traffic from 
-bank conflicts. The 268M excessive wavefronts (on top of the 436M legitimate ones) maps directly to your 5-way
-conflict factor measured earlier. The 36% estimated speedup from eliminating these is the second-largest lever
-after occupancy.
+The Critical Bottleneck: Uncoalesced Shared Accesses for the bank conflicts. This is the most significant
+performance inhibitor revealed in this set of profiling.
+-The profiler flags a severe warning for Uncoalesced Shared Accesses with an estimated local speedup of 36.04%
+if resolved.  
+-The bank conflicts. Shared memory is organized into 32 equal-sized memory banks. When multiple threads within
+the same warp access different memory addresses that map to the same memory bank, a bank conflict occurs. 
+The hardware cannot serve these requests simultaneously, so it serializes them into multiple hardware
+transactions (wavefronts). A 38% excessive wavefront rate means the shared memory load/store instructions 
+are taking significantly longer than necessary. All shared memory wavefronts are replay traffic from bank
+conflicts. The 268M excessive wavefronts (on top of the 436M legitimate ones) maps directly to the 5-way
+conflict factor measured earlier. The 36% estimated speedup from eliminating these is the second-largest 
+lever after occupancy.
 </pre>
 ______________________________________________________________________________________________________
+<pre>
 Summary:
-Low occupancy (register-limited): 128 regs/thread → 2 blocks/SM; need register spilling or smaller tiles
+-Low occupancy (register-limited): 128 regs/thread → 2 blocks/SM; need register spilling or smaller tiles
 Uncoalesced shared memory accesses: 5-way bank conflicts on shared A/B tiles; padding (+8) or swizzle needed
 Not Selected / Dispatch stalls: Consequence of low occupancy — scheduler has nothing to pick
 MIO Throttle / Short Scoreboard: Bank conflict replay inflating MIO queue depth
 
-The occupancy issue (66.67% est. speedup) and shared memory bank conflicts (36.04%) are the two independent 
+-The occupancy issue (66.67% est. speedup) and shared memory bank conflicts (36.04%) are the two independent 
 problems, and they interact: fixing bank conflicts reduces MIO pressure but doesn't recover the missing warps;
 fixing occupancy gives the scheduler more warps to hide the remaining latencies. The path you already took — 
 moving to WMMA/tensor cores — addresses occupancy indirectly by reducing the register accumulator footprint
 (HMMA executes the FMA in hardware with architectural register reuse). The bank conflict fix you applied 
 (SMEM_A_STRIDE = BLOCK_K + 8) addresses the second problem. That's precisely why you got the 2.55x speedup on 
 the WMMA path.
+
+-Optimization: (for learning)
+-Since this workload is heavily memory-bound (as seen in the high L1/TEX cache throughput from the previous
+data), fixing these shared memory bank conflicts is the highest leverage action you can take right now.
+
+-If it is managing the shared memory tiles manually, check the indexing arithmetic. A common fix is to pad the
+inner dimension of your shared memory arrays (e.g., changing __shared__ float smem[TILE_Y][TILE_X] to 
+smem[TILE_Y][TILE_X + 1]) to shift the bank alignments and break up the conflicts.
+
+-If it is utilizing layout algebra abstractions or collective builders (such as CuTe, I have experienced using
+padding and XOR layouts, which did not resolve bank conflicts, but utilizing CuTe successfully did.), it will
+likely need to apply an XOR swizzle pattern to the shared memory layout. Properly configuring the layout 
+permutations before the matrix multiplication iterations begin will ensure threads read and write across 
+different banks seamlessly.
+</pre>
