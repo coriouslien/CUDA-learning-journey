@@ -84,8 +84,20 @@ Visually indistinguishable from pageable. Long Scoreboard bar at ~120 cycles, Sh
 _____________________________________________________________________________________________________
 Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/006352ce-d170-4087-a6fc-e95875478de6" />
+<pre>
+Achieved occupancy is 80.23% vs 80.40% — a 0.17% difference. This is within the tail-effect variance from block wave scheduling. All the hard limits (registers, shared mem, warps, SM) are identical, as expected — these are compile-time properties of the kernel PTX, completely independent of host memory allocation.
 
-
+  Metric	Pinned	Pageable	Delta
+Theoretical Occupancy	100%	100%	identical
+Achieved Occupancy	80.23%	80.40%	−0.17%
+Achieved Active Warps/SM	38.51	38.59	−0.08
+Block Limit Registers	16	16	identical
+Block Limit Shared Mem	16	16	identical
+Block Limit Warps	6	6	identical
+Block Limit SM	24	24	identical
+Est. Speedup	12.82%	13.08%	−0.26%
+  
+</pre>
 _____________________________________________________________________________________________________
 Impact of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1bcad814-b4f8-46cf-9f36-ad64ddc6f469" />
@@ -105,14 +117,61 @@ ________________________________________________________________________________
 Impact of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/75ac7712-e760-42f5-b510-5c883c391b53" />
 
-
+<pre>
+All four charts (Register Count, Block Size, Shared Memory, Block Barriers) are pixel-for-pixel identical to the pageable versions. This is mathematically guaranteed — these are analytical curves computed from the kernel's resource usage, which is a compile-time constant. They will never differ between pageable and pinned runs of the same kernel.
+  
+</pre>
 _____________________________________________________________________________________________________
 Impact of Varying Cluster Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/05adc04e-0c67-4ccd-93e7-638701d204a2" />
 
+<pre>
+Identical. Same instruction count, same branch behavior. The Warp Stall Sampling table would again show 92%+ samples concentrated at the global load line.
 
+  Metric	Pinned	Pageable
+Branch Instructions	16,777,216	16,777,216
+Branch Instructions Ratio	0.12%	0.12%
+Branch Efficiency	0	0
+Avg. Divergent Branches	0	0
 
+  
+</pre>
 
+<pre>
+Summary:
+What Pinned Memory Actually Does
+
+Here is the precise mental model, which your data proves empirically:
+
+Pinned memory (cudaMallocHost) affects only the PCIe transfer path. When you call cudaMemcpy(d_in, h_in, size, H2D):
+
+With pageable host memory: the CUDA runtime must first shadow-copy the data to a pinned staging buffer (OS-managed, invisible to you), then DMA from that buffer to the device. This adds latency and reduces effective H2D bandwidth — you're paying for an extra memcpy on the CPU side.
+With pinned host memory: the DMA engine can access the host buffer directly. No staging copy. Maximum PCIe bandwidth is achievable.
+
+Once cudaMemcpy returns and the data is in device DRAM, the GPU has no record of how it got there. The DRAM cells holding d_in[tid] are identical bits regardless of whether they came from pinned or pageable host memory. Your NCU data makes this structurally visible — every single kernel-side metric is statistically identical.
+
+Where to look for the real difference: your cudaEventElapsedTime printout for H2D. On an RTX 5080 connected via PCIe 5.0 x16 you should see something like:
+
+Pageable H2D: ~10–14 GB/s effective (throttled by staging copy)
+Pinned H2D: ~25–50+ GB/s effective (direct DMA, near PCIe 5.0 bandwidth)
+
+That's a 2–4× difference on the transfer, completely invisible to NCU's kernel profiler.
+
+Complete Delta Table: Everything That Matters
+What changed	Pageable	Pinned	Verdict
+Kernel duration	2.58 ms	2.56 ms	Noise (0.8%)
+DRAM throughput	822.54 GB/s	825.02 GB/s	Noise (0.3%)
+DRAM SOL %	86.92%	87.18%	Noise (0.3%)
+Long Scoreboard stall	120.2 cycles	120.2 cycles	Identical
+Scheduler eligible warps	0.08	0.08	Identical
+Achieved occupancy	80.40%	80.23%	Noise (0.2%)
+All sensitivity charts	—	—	Identical
+H2D transfer bandwidth	your printout	your printout	Large difference
+
+The NCU kernel profile tells you the same story both times: you have a DRAM-bandwidth-saturated, Long-Scoreboard-dominated streaming kernel achieving ~87% of hardware peak, and pinned vs. pageable host allocation is orthogonal to all of it.
+
+  
+</pre>
 
 
 
