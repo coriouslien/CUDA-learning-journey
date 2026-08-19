@@ -25,8 +25,9 @@ src/sgemm_regs_tiling_runner.cu: The primary benchmarking harness. Handles host/
 
 ### Kernel 1 — `03_sgemm_register_tiling.cu` (Baseline, Best Result) ###
 
-**What it does** 
 
+Foundational register tiling implementation utilizing 1D thread mapping and vectorized
+global loads.
 Register-tiled SGEMM with 2D thread mapping (`dim3(16,16)`). Each thread owns an
 8×8 register tile (`c_regs[TM][TN]`). The outer K-loop loads BM×BK and BK×BN tiles
 into shared memory (`s_A`, `s_B`), then each thread accumulates its 8×8 output via
@@ -74,8 +75,8 @@ clean baseline for comparison against every subsequent variant.
 
 ### Kernel 2 — `03_sgemm_register_tiling_float4.cu` (Float4 Attempt) ###
 
-### What it does ###
 
+Enhances the baseline by vectorizing the inner-loop shared memory loads into registers via float4 instructions.
 Identical to Kernel 1 except `compute_slice` reads `s_B` using `float4` reinterpret
 casts instead of scalar indexing. The intent was to replace 8 scalar `LDS`
 instructions per k-iteration with 2 `LDS.128` instructions, eliminating the bank
@@ -120,8 +121,8 @@ the stalls it eliminates. This is the most important lesson from this kernel fam
 
 ### Kernel 3 — `03_sgemm_register_tiling_swizzing.cu` (Swizzle Attempt) ###
 
-### What it does ###
 
+Explores XOR layout permutations to mitigate shared memory bank conflicts during matrix accumulation.
 Attempted to eliminate the shared memory bank conflicts from Kernel 1 by applying
 an XOR swizzle to the `s_B` write addresses in `load_s_B` and mirroring the same
 transform on reads in `compute_slice`.
