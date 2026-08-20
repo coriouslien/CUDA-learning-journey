@@ -103,6 +103,7 @@ Achieved occupancy is 80.23% vs 80.40% — a 0.17% difference. This is within th
 block wave scheduling. All the hard limits (registers, shared mem, warps, SM) are identical, as expected — 
 these are compile-time properties of the kernel PTX, completely independent of host memory allocation.
 </pre>
+
 |Metric|	Pinned|	Pageable|	Delta|
 |------|--------|---------|------|
 |Theoretical Occupancy|	100%|	100%|	identical|
@@ -135,7 +136,10 @@ Impact of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/75ac7712-e760-42f5-b510-5c883c391b53" />
 
 <pre>
-All four charts (Register Count, Block Size, Shared Memory, Block Barriers) are pixel-for-pixel identical to the pageable versions. This is mathematically guaranteed — these are analytical curves computed from the kernel's resource usage, which is a compile-time constant. They will never differ between pageable and pinned runs of the same kernel.
+All four charts (Register Count, Block Size, Shared Memory, Block Barriers) are pixel-for-pixel identical to 
+the pageable versions. This is mathematically guaranteed — these are analytical curves computed from the 
+kernel's resource usage, which is a compile-time constant. They will never differ between pageable and pinned
+runs of the same kernel.
   
 </pre>
 _____________________________________________________________________________________________________
@@ -143,31 +147,40 @@ Impact of Varying Cluster Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/05adc04e-0c67-4ccd-93e7-638701d204a2" />
 
 <pre>
-Identical. Same instruction count, same branch behavior. The Warp Stall Sampling table would again show 92%+ samples concentrated at the global load line.
-
-  Metric	Pinned	Pageable
-Branch Instructions	16,777,216	16,777,216
-Branch Instructions Ratio	0.12%	0.12%
-Branch Efficiency	0	0
-Avg. Divergent Branches	0	0
-
-  
+Identical. Same instruction count, same branch behavior. The Warp Stall Sampling table would again show 
+92%+ samples concentrated at the global load line.
 </pre>
 
+|Metric|	Pinned|	Pageable|
+|------|--------|---------|
+|Branch Instructions|	16,777,216|	16,777,216|
+|Branch Instructions Ratio|	0.12%	|0.12%|
+|Branch Efficiency	|0	|0|
+|Avg. Divergent Branches|	0|	0|
+
+  
 <pre>
 Summary:
 What Pinned Memory Actually Does
 
 Here is the precise mental model, which your data proves empirically:
 
-Pinned memory (cudaMallocHost) affects only the PCIe transfer path. When you call cudaMemcpy(d_in, h_in, size, H2D):
+Pinned memory (cudaMallocHost) affects only the PCIe transfer path. When you call 
+cudaMemcpy(d_in, h_in, size, H2D):
 
-With pageable host memory: the CUDA runtime must first shadow-copy the data to a pinned staging buffer (OS-managed, invisible to you), then DMA from that buffer to the device. This adds latency and reduces effective H2D bandwidth — you're paying for an extra memcpy on the CPU side.
-With pinned host memory: the DMA engine can access the host buffer directly. No staging copy. Maximum PCIe bandwidth is achievable.
+With pageable host memory: the CUDA runtime must first shadow-copy the data to a pinned staging buffer 
+(OS-managed, invisible to you), then DMA from that buffer to the device. This adds latency and reduces
+effective H2D bandwidth — you're paying for an extra memcpy on the CPU side.
+With pinned host memory: the DMA engine can access the host buffer directly. No staging copy. Maximum 
+PCIe bandwidth is achievable.
 
-Once cudaMemcpy returns and the data is in device DRAM, the GPU has no record of how it got there. The DRAM cells holding d_in[tid] are identical bits regardless of whether they came from pinned or pageable host memory. Your NCU data makes this structurally visible — every single kernel-side metric is statistically identical.
+Once cudaMemcpy returns and the data is in device DRAM, the GPU has no record of how it got there. 
+The DRAM cells holding d_in[tid] are identical bits regardless of whether they came from pinned or pageable
+host memory. Your NCU data makes this structurally visible — every single kernel-side metric is 
+statistically identical.
 
-Where to look for the real difference: your cudaEventElapsedTime printout for H2D. On an RTX 5080 connected via PCIe 5.0 x16 you should see something like:
+Where to look for the real difference: your cudaEventElapsedTime printout for H2D. On an RTX 5080 
+connected via PCIe 5.0 x16 you should see something like:
 
 Pageable H2D: ~10–14 GB/s effective (throttled by staging copy)
 Pinned H2D: ~25–50+ GB/s effective (direct DMA, near PCIe 5.0 bandwidth)
@@ -185,9 +198,10 @@ Achieved occupancy	80.40%	80.23%	Noise (0.2%)
 All sensitivity charts	—	—	Identical
 H2D transfer bandwidth	your printout	your printout	Large difference
 
-The NCU kernel profile tells you the same story both times: you have a DRAM-bandwidth-saturated, Long-Scoreboard-dominated streaming kernel achieving ~87% of hardware peak, and pinned vs. pageable host allocation is orthogonal to all of it.
+The NCU kernel profile tells you the same story both times: you have a DRAM-bandwidth-saturated, 
+Long-Scoreboard-dominated streaming kernel achieving ~87% of hardware peak, and pinned vs. pageable 
+host allocation is orthogonal to all of it.
 
-  
 </pre>
 
 
