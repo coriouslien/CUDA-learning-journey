@@ -69,12 +69,12 @@ Warp State Statistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/45eb9fe2-c2bb-4776-8f83-88f614d447f1" />
 
 <pre>
-
 131.17 vs. 130.98 cycles per issued instruction — a 0.19-cycle difference at 2.29 GHz is 0.08 ns. Noise.
+Long Scoreboard is identical at 120.2 cycles. The DRAM round-trip latency is a hardware constant; 
+it doesn't care what memory type was on the host before the H2D transfer.
 
-Long Scoreboard is identical at 120.2 cycles. The DRAM round-trip latency is a hardware constant; it doesn't care what memory type was on the host before the H2D transfer.
-
-The Est. Speedup dropping from 13.08% to 12.82% is interesting — pinned is marginally closer to optimal in NCU's model, consistent with the slightly higher throughput.
+The Est. Speedup dropping from 13.08% to 12.82% is interesting — pinned is marginally closer to optimal 
+in NCU's model, consistent with the slightly higher throughput.
 </pre>
 
 |Metric|	Pinned|	Pageable|	Delta|
