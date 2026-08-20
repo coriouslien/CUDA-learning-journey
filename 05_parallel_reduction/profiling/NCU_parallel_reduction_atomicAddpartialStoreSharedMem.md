@@ -98,22 +98,43 @@ Block limits are identical to SharedMem: 5 register blocks, 6 shared memory bloc
 ______________________________________________________________________________________________________
 Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1edc29b1-f121-42b9-8f88-558f6df6ba71" />
-
+<pre>
+Dot at 512, same as SharedMem. 100% theoretical occupancy at this block size — correct.
+</pre>
 
 
 ______________________________________________________________________________________________________
 Impact of Varying Shared Memory Usage Per Block
 
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e927faf2-885b-4bba-910d-3d752fe60cf2" />
-
+<pre>
+Dot at ~4,096 bytes (512 × 8 bytes). Same curve shape as SharedMem — drops from 100% at ~6,368 bytes. 
+The shared memory allocation is the same because the kernel code is the same; the bug is in the reduction 
+body and the final write, not the shared memory declaration.
+</pre>
 
 ______________________________________________________________________________________________________
 Impact of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c45cd9a2-c37c-4855-891e-243dad672745" />
-
+<pre>
+The __syncthreads() calls execute 9 times (log2(512) reduction steps), but because the reduction body is dead,
+NCU may report fewer active barriers. Occupancy stays 100% up to ~9 barriers consistent with the other shared
+memory kernels.
+</pre>
 
 
 ______________________________________________________________________________________________________
 Impact of Varying Cluster Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4bb6b023-a190-469d-aeb7-ce5b8e3cd132" />
+<pre>
+Avg Divergent Branches: 80 — dramatically lower than SharedMem's 7,801. This is direct evidence of the dead
+reduction: the if (tx < s) branch in the tree loop never executes because tx < 0 is always false. 
+No threads enter the branch, so there is no warp divergence from the reduction. The only divergence comes 
+from the stride loop boundary check if (i < total_elements).
 
+This is actually a diagnostic confirmation of the bug — if the reduction were executing correctly, 
+it would expect ~7,800 divergent branches here just like SharedMem.
+
+Warp Stall Sampling: Top location 121,701 samples (54%) and 33,073 samples (15%) — these point to the 
+global load line in the stride loop, consistent with Long Scoreboard being the dominant stall.
+</pre>
