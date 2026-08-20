@@ -201,11 +201,14 @@ Complete Delta Table: Everything That Matters
 |Scheduler eligible warps|	0.08|	0.08	|Identical|
 |Achieved occupancy|	80.40%|	80.23%	|Noise (0.2%)|
 |Dominant Stall Type	|Long Scoreboard (120.2 cycles, 91.8%)|	Long Scoreboard (120.2 cycles, 91.6%)|	Identical latency waiting on global loads|
-|All sensitivity charts|	—	|—	|Identical|
+|Achieved Occupancy|	80.40% (38.59 warps/SM)	|80.23% (38.51 warps/SM)	|Identical SM block scheduling|
 
-|H2D transfer bandwidth|	the printout|	the printout|	Large difference|
+
+
 
 <pre>
+For an RTX 5080 operating on a PCIe Gen 5.0 x16 interface, a pinned memory transfer could theoretically approach ~64 GB/s, whereas pageable memory will fall significantly short of that due to the staging bottleneck.
+  
 The NCU kernel profile tells the same story both times: it has a DRAM-bandwidth-saturated, 
 Long-Scoreboard-dominated streaming kernel achieving ~87% of hardware peak, and pinned vs. pageable 
 host allocation is orthogonal to all of it.
