@@ -1,3 +1,8 @@
+Grid: (5376, 1, 1)   Block: (768, 1, 1)
+Total threads: 5376 × 768 = 4,128,768
+Duration: 12.19 ms
+SM Frequency: 2.29 GHz
+
 GPU Speed Of Light Throughput
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/cde1b0ba-09ba-4bab-aa17-dfcf74eda562" />
 
