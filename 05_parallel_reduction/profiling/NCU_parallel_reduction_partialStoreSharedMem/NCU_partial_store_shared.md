@@ -29,6 +29,9 @@ Occupancy
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/51618dea-3280-4f45-bca1-31ea9d90679c" />
 
 
+_____________________________________________________________________________________________________
+Impact of Varying Register Count Per Thread
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1f2ccb7c-00a2-4d7c-a594-a5167d801ea2" />
 
 
 ____________________________________________________________________________________________________
