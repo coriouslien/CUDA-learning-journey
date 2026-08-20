@@ -1,3 +1,4 @@
+The profiled kernel is executing bandwidth_coalesced over $N = 2^{28}$ single-precision floats (1,048,576 thread blocks $\times$ 256 threads/block = 268,435,456 elements $\approx$ 1.07 GB).
 
 GPU Speed Of Light Throughout
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/d2b61dfe-4efa-49e2-86d4-8bd020a5dc52" />
