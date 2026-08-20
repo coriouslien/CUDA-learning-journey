@@ -111,12 +111,13 @@ Summary:
 The naive kernel's performance is entirely limited by one design decision: every thread loads directly from
 global memory with no caching, no shared memory staging, and two global atomicAdds at the end.
 
-Problem	Evidence	Root Cause
-18.8% memory bandwidth	SOL, DRAM throughput	Not enough concurrent independent requests
-0% L1 hit rate	Memory Workload	No data reuse, no shared memory
-99.46% no-eligible cycles	Scheduler Statistics	All warps stalled on memory simultaneously
-1,630 cycles per instruction	Warp State	Long scoreboard stalls dominate
-LG Throttle 33.5%	Warp State	Global memory instruction queue saturated
+|Problem|	Evidence|	Root Cause|
+|-------|---------|-----------|
+|18.8% memory bandwidth|	SOL, DRAM throughput|	Not enough concurrent independent requests|
+|0% L1 hit rate|	Memory Workload|	No data reuse, no shared memory|
+|99.46% no-eligible cycles|	Scheduler Statistics|	All warps stalled on memory simultaneously|
+|1,630 cycles per instruction	|Warp State	|Long scoreboard stalls dominate|
+|LG Throttle 33.5%|	Warp State|	Global memory instruction queue saturated|
 
 The two atomicAdd calls at the end also serialize across all 4M threads to a single output location, but the 
 load-loop latency dominates so heavily that the atomic contention is secondary here.
