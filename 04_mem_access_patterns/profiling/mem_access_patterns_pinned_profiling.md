@@ -191,7 +191,7 @@ That's a 2–4× difference on the transfer, completely invisible to NCU's kerne
 </pre>
 
 Complete Delta Table: Everything That Matters
-|What changed	|Pageable	|Pinned	|Verdict|
+|What changed	|Pageable Run(mem_access_patterns_pageable)	|Pinned Run	|Delta/Observation|
 |-------------|---------|-------|-------|
 |Kernel duration	|2.58 ms	|2.56 ms	|Noise (0.8%)|
 |DRAM throughput	|822.54 GB/s	|825.02 GB/s	|Noise (0.3%)|
