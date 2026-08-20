@@ -208,7 +208,7 @@ H2D Transfer Bandwidth Characteristics
 |Memory Allocation Type|Transfer Mechanism|Expected H2D Bandwidth|Overhead|
 |----------------------|-------------------|---------------------|--------|
 |Pageable (malloc)|Requires an implicit copy<br> from pageable memory to a temporary driver-allocated<br> pinned buffer before<br> transferring to the GPU.|Lower effective bandwidth due<br> to the extra CPU-side<br> copy operation.|High (CPU cycles consumed for staging copy;<br> cannot overlap transfers asynchronously)|
-Pinned (cudaMallocHost)GPU DMA engine transfers data directly from physical RAM via the PCIe bus.Approaches the theoretical maximum bandwidth of the PCIe bus generation.Low (Zero-copy transfer bypasses CPU staging; enables asynchronous overlap with compute streams).
+|Pinned (cudaMallocHost)|GPU DMA engine transfers data<br> directly from physical RAM via the PCIe bus.|Approaches the theoretical maximum bandwidth of the<br> PCIe bus generation.|Low (Zero-copy transfer bypasses CPU staging;<br> enables asynchronous overlap with compute streams).|
 
 <pre>
 For an RTX 5080 operating on a PCIe Gen 5.0 x16 interface, a pinned memory transfer could theoretically 
