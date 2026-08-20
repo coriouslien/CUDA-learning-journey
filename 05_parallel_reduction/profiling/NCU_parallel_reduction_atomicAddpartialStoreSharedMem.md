@@ -34,7 +34,7 @@ enormous DRAM traffic.
 
 No Eligible cycles jumped back to 96.93% — nearly as bad as the naive kernel's 99.46%. 
 Despite having the most active warps per scheduler (11.91), almost none are eligible. 
-This tells you the warps are stalled, not doing work. The scheduler issues one instruction 
+This tells the warps are stalled, not doing work. The scheduler issues one instruction 
 every 32.6 cycles — far worse than SharedMem's 1.8, though better than naive's 185.9.
 
 The paradox: 95% DRAM throughput with 97% no-eligible cycles. Both are true simultaneously — 
