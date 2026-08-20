@@ -161,18 +161,20 @@ Identical. Same instruction count, same branch behavior. The Warp Stall Sampling
   
 <pre>
 Summary:
-What Pinned Memory Actually Does
+What Pinned Memory Actually Does:
+The baseline bandwidth_coalesced kernel achieves near-theoretical peak memory saturation:
+-~825 GB/s DRAM Throughput (87.18% SOL)
+-100% Coalesced Transactions (no wasted memory bus bandwidth per 32-byte sector)
+-0 Divergent Branches
 
-Here is the precise mental model, which the data proves empirically:
 
 Pinned memory (cudaMallocHost) affects only the PCIe transfer path. When it call 
 cudaMemcpy(d_in, h_in, size, H2D):
 
-With pageable host memory: the CUDA runtime must first shadow-copy the data to a pinned staging buffer 
-(OS-managed, invisible to you), then DMA from that buffer to the device. This adds latency and reduces
-effective H2D bandwidth — it is paying for an extra memcpy on the CPU side.
-With pinned host memory: the DMA engine can access the host buffer directly. No staging copy. Maximum 
-PCIe bandwidth is achievable.
+With pageable host memory: the CUDA runtime must first shadow-copy the data to a pinned staging buffer, 
+then DMA from that buffer to the device. This adds latency and reduces effective H2D bandwidth — 
+it is paying for an extra memcpy on the CPU side. With pinned host memory: the DMA engine can access the 
+host buffer directly. No staging copy. Maximum  PCIe bandwidth is achievable.
 
 Once cudaMemcpy returns and the data is in device DRAM, the GPU has no record of how it got there. 
 The DRAM cells holding d_in[tid] are identical bits regardless of whether they came from pinned or pageable
@@ -186,23 +188,26 @@ Pageable H2D: ~10–14 GB/s effective (throttled by staging copy)
 Pinned H2D: ~25–50+ GB/s effective (direct DMA, near PCIe 5.0 bandwidth)
 
 That's a 2–4× difference on the transfer, completely invisible to NCU's kernel profiler.
+</pre>
 
 Complete Delta Table: Everything That Matters
-What changed	Pageable	Pinned	Verdict
-Kernel duration	2.58 ms	2.56 ms	Noise (0.8%)
-DRAM throughput	822.54 GB/s	825.02 GB/s	Noise (0.3%)
-DRAM SOL %	86.92%	87.18%	Noise (0.3%)
-Long Scoreboard stall	120.2 cycles	120.2 cycles	Identical
-Scheduler eligible warps	0.08	0.08	Identical
-Achieved occupancy	80.40%	80.23%	Noise (0.2%)
-All sensitivity charts	—	—	Identical
-H2D transfer bandwidth	the printout	the printout	Large difference
+|What changed	|Pageable	|Pinned	|Verdict|
+|-------------|---------|-------|-------|
+|Kernel duration	|2.58 ms	|2.56 ms	|Noise (0.8%)|
+|DRAM throughput	|822.54 GB/s	|825.02 GB/s	|Noise (0.3%)|
+|DRAM SOL %	|86.92%|	87.18%|	Noise (0.3%)|
+|Long Scoreboard stall|	120.2 cycles|	120.2 cycles|	Identical|
+|Scheduler eligible warps|	0.08|	0.08	|Identical|
+|Achieved occupancy|	80.40%|	80.23%	|Noise (0.2%)|
+|All sensitivity charts|	—	|—	|Identical|
+|H2D transfer bandwidth|	the printout|	the printout|	Large difference|
 
+<pre>
 The NCU kernel profile tells the same story both times: it has a DRAM-bandwidth-saturated, 
 Long-Scoreboard-dominated streaming kernel achieving ~87% of hardware peak, and pinned vs. pageable 
 host allocation is orthogonal to all of it.
-
 </pre>
+
 
 
 
