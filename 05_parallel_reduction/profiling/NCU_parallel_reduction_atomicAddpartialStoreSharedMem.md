@@ -1,46 +1,54 @@
 GPU Speed Of Light Throughput
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c2f99dd2-a04a-4a1c-a551-4982a1e10bcb" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7429a879-7443-4dba-8741-1258bde2345c" />
+
 
 ______________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statistics
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/851af506-89d6-48f5-84eb-78bae89ceb2e" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ab289276-9db2-4a44-b86c-29435d6eeded" />
+
 
 
 ______________________________________________________________________________________________________
 Warps Per Scheduler
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/bb594dec-a15f-4cbd-8e01-b1d57a2d447c" />
+
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/56f10ea0-71e2-4471-b2dc-9aee8d3f345d" />
 
 
 ______________________________________________________________________________________________________
 Warp State Statistics
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/a6497c51-ac42-49b5-bcb3-5bec7d4981af" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e12168ed-04af-403d-af65-1280c4b5fa95" />
 
 ______________________________________________________________________________________________________
 Warp State (All Cycles)
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/93c9b697-ee86-46a4-8aaa-4a056649e420" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/0e7cbf49-4457-4e66-80c7-e9acf395aac6" />
+
 
 
 
 ______________________________________________________________________________________________________
 Occupancy & Impact of Varying Register Count Per Thread
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/7ad2b6e7-1a45-436d-bc00-514f1a6e786a" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/28bd7a06-22f0-4c5a-b1a0-085365f56f56" />
+
 
 ______________________________________________________________________________________________________
 Impact of Varying Block Size
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ac2752d5-af85-46d8-8aa1-ca563f6a08a9" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1edc29b1-f121-42b9-8f88-558f6df6ba71" />
+
 
 
 ______________________________________________________________________________________________________
 Impact of Varying Shared Memory Usage Per Block
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/38b540ed-8611-4ff6-9b0a-79577030ee98" />
+
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e927faf2-885b-4bba-910d-3d752fe60cf2" />
 
 
 ______________________________________________________________________________________________________
 Impact of Varying Block Barriers
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e895b619-816d-4aaa-9589-19248265dc02" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/c45cd9a2-c37c-4855-891e-243dad672745" />
+
 
 
 ______________________________________________________________________________________________________
 Impact of Varying Cluster Size
-<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/8d491581-d542-4f25-bbe2-45d2a1d7032a" />
+<img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4bb6b023-a190-469d-aeb7-ce5b8e3cd132" />
 
