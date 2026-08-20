@@ -13,10 +13,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(SOURCES
     src/main.cu
-    src/warmup.cu
     src/wmma_double_buff_async.cu
     kernels/wmma_swizzle_async_kernel.cu
+    kernels/warmup.cu
 )
+
 
 add_executable(wmma_double_buff_async ${SOURCES})
 
