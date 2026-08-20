@@ -192,15 +192,17 @@ That's a 2–4× difference on the transfer, completely invisible to NCU's kerne
 
 Complete Delta Table: Everything That Matters
 |What changed	|Pageable Run(	|Pinned Run	|Delta/Observation|
-|             |mem_access_patterns_pageable)|   |  |
 |-------------|---------|-------|-------|
-|Kernel duration	|2.58 ms	|2.56 ms	|Noise (0.8%)|
+|Kernel duration	|2.58 ms	|2.56 ms	|$\approx 0.77\%$ variation (within noise margin)|
 |DRAM throughput	|822.54 GB/s	|825.02 GB/s	|Noise (0.3%)|
 |DRAM SOL %	|86.92%|	87.18%|	Noise (0.3%)|
+|Compute(SM) Throughput|16.87%	|17.04%	|Pure memory-bandwidth bound|
 |Long Scoreboard stall|	120.2 cycles|	120.2 cycles|	Identical|
 |Scheduler eligible warps|	0.08|	0.08	|Identical|
 |Achieved occupancy|	80.40%|	80.23%	|Noise (0.2%)|
+|Dominant Stall Type	|Long Scoreboard (120.2 cycles, 91.8%)|	Long Scoreboard (120.2 cycles, 91.6%)|	Identical latency waiting on global loads|
 |All sensitivity charts|	—	|—	|Identical|
+
 |H2D transfer bandwidth|	the printout|	the printout|	Large difference|
 
 <pre>
