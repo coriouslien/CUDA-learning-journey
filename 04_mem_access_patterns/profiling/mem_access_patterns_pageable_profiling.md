@@ -8,33 +8,39 @@ L2 hit rate is 0 (Image 2). This is expected and correct for a streaming kernel 
 bytes × 2 arrays = 2 GiB blows past both L1 (128 KB per SM on Blackwell) and L2 (well under 2 GiB). 
 Every access goes straight to DRAM.
 
-The Compute throughput at 16.87% tells you this is solidly memory-bound. The kernel does one multiply per
-thread (* 2.0f), which is essentially free compared to the DRAM latency. SM is mostly idle waiting for data.
-This is the correct and expected behavior for a memory bandwidth benchmark.
+The Compute throughput at 16.87%. Because the kernel performs only 1 FLOP per 8 bytes of data transfer 
+(1 float read + 1 float write = 8 bytes per thread). It is solidly memory-bound. The kernel does one multiply
+per thread (* 2.0f), which is essentially free compared to the DRAM latency. SM is mostly idle waiting for
+data. 
 
-The NCU "High Throughput" notice — >80% on memory — confirms the kernel is doing exactly what you designed it
+The NCU "High Throughput" notice — >80% on memory — confirms the kernel is doing exactly what it designed it
 to do.
 ______________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/edd42cff-357c-4b18-b2a9-120819f2b5c5" />
-822 GB/s on your RTX 5080 is a strong result. The GB102/GB203 Blackwell memory subsystem has ~960 GB/s 
+822 GB/s on the RTX 5080 is a strong result. The GB102/GB203 Blackwell memory subsystem has ~960 GB/s 
 theoretical peak on the 5080; 822 GB/s is ~85.6% of theoretical, which tracks precisely with the 86.92% SOL.
-That is excellent coalesced throughput — you are within ~14% of the hardware ceiling.
+That is excellent coalesced throughput — It is within ~14% of the hardware ceiling.
 
-L1=0, L2=0 is not a problem here; it's the streaming access pattern working as intended. The working set is
-too large to benefit from cache reuse.
+Cache 0% hit reate, Both L1/TEX and L2 hit rates show 0.00%. This is expected for streaming operations: a 1.07
+GB dataset completely exceeds the L2 cache capacity (64 MB), causing every memory load and store to stream 
+directly from and to VRAM (DRAM). L1=0, L2=0 is not a problem here; it's the streaming access pattern working
+as intended. The working set is too large to benefit from cache reuse.
 
 Schedule Statistics:
 This looks alarming at first glance but is actually the correct signature of a DRAM-latency-saturated,
 bandwidth-optimal kernel. Parse it carefully:
 
-You have 9.51 active warps per scheduler — nearly at theoretical (12 per scheduler, visible in Image 3).
-But only 0.08 of those are eligible (ready to issue) per cycle.
-The scheduler finds no eligible warp 92.74% of cycles and idles.
+It has 9.51 active warps per scheduler — nearly at theoretical (12 per scheduler). But only 0.08 of those 
+are eligible (ready to issue) per cycle.
+Slot Starvation - The scheduler finds no eligible warp 92.74% of cycles and idles. While the scheduler 
+maintains an average of 9.51 active warps, only 0.08 warps are eligible to issue instructions per cycle.
+This is standard for a memory-bandwidth-bound streaming kernel: the memory pipeline and DRAM controllers 
+are fully congested (86.92% Max Bandwidth), leaving active warps waiting in line for memory responses.
 
 This happens because every warp is stalled waiting on its global load to come back from DRAM. DRAM latency is
 ~400–600 cycles on Blackwell. With 9.51 warps in flight, each warp is covering only a fraction of that 
-latency. This is the DRAM-bandwidth regime: you've pushed enough warps to saturate the memory bus (86.92%),
+latency. This is the DRAM-bandwidth regime: it has pushed enough warps to saturate the memory bus (86.92%),
 but not enough total in-flight requests to keep schedulers busy. The scheduler idle rate is the price of a 
 bandwidth-bound kernel at this occupancy level.
 
@@ -46,7 +52,7 @@ Warp Per Scheduler
 The chart visually confirms:
 
 GPU Maximum Warps Per Scheduler: ~12 (Blackwell SM120 capacity)
-Theoretical Warps Per Scheduler: ~12 (your block size of 256 = 8 warps, × 6 blocks per SM = 48 warps / 4
+Theoretical Warps Per Scheduler: ~12 (the block size of 256 = 8 warps, × 6 blocks per SM = 48 warps / 4
 schedulers = 12)
 Active Warps Per Scheduler: ~9.5 (80% of theoretical)
 Eligible: nearly zero (thin sliver)
@@ -59,10 +65,13 @@ in-flight transaction volume is what saturates the bus, not scheduler throughput
 ______________________________________________________________________________________________________
 Warp State Statistics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/e829a95a-bb88-4bd2-9bb1-21aa8ad01f41" />
-The dominant stall: Long Scoreboard — 120.2 cycles per instruction, 91.8% of all stall cycles.
+The dominant stall: Long Scoreboard — Average latency per issued instruction is 130.98 cycles, with 120.2 
+cycles (91.8%) spent in Stall Long Scoreboard.
 
 Long Scoreboard means the warp issued a load and is waiting for data to come back from a long-latency 
-unit — in this case L1TEX, which is serving global memory loads straight from DRAM. 120 cycles sitting on 
+unit, when a warp is blocked waiting for an asynchronous memory operation(global load from d_in) to return 
+data to a target register before executing dependent instructions (* 2.0f and write to d_out)
+In this case L1TEX, which is serving global memory loads straight from DRAM. 120 cycles sitting on 
 a DRAM fetch is precisely the expected Blackwell global load latency when L1 and L2 are both missing.
 
 The "Not Predicated Off Threads" of 30.12 vs. 32 active threads is the tail-end boundary effect: the very 
@@ -73,7 +82,7 @@ some blocks are partially-predicated. At N = 2²⁸ this is negligible.
 
 The 13.08% estimated speedup NCU shows for both "Issue Slot Utilization" and "Long Scoreboard Stalls" is 
 the same recommendation: better latency hiding. Practically speaking, for a pure streaming kernel at 86.92%
-of DRAM bandwidth, 13% headroom is acceptable — you would need either persistent kernels or a different 
+of DRAM bandwidth, 13% headroom is acceptable — it would need either persistent kernels or a different 
 access pattern to close it.
 _____________________________________________________________________________________________________
 Warp State (All Cycles)
@@ -98,21 +107,21 @@ Blackwell SM120 supports 48 warps max per SM.
 48 / 8 = 6 blocks max per SM → this is the limit.
 6 blocks × 8 warps = 48 warps = 100% theoretical occupancy.
 
-So theoretically you're at 100%. But achieved is 80.4%, meaning you're landing ~38.6 warps per SM in practice.
+So theoretically it is at 100%. But achieved is 80.4%, meaning it is landing ~38.6 warps per SM in practice.
 The delta is from tail effect — the last few wave-fronts of blocks don't fill all SMs evenly. With 1,048,576 
 blocks across the GPU, the tail imbalance is minimal in absolute terms, but NCU measures average over the 
 whole execution timeline including the startup/drain phases.
 
-The "Achieved Occupancy Est. Speedup: 13.08%" is NCU saying: "if you closed the 20% occupancy gap, you might
-get 13% faster." For this kernel, that gain is mostly theoretical — you're already at 86.92% memory SOL, so 
+The "Achieved Occupancy Est. Speedup: 13.08%" is NCU saying: "if it closed the 20% occupancy gap, it might
+get 13% faster." For this kernel, that gain is mostly theoretical — it is already at 86.92% memory SOL, so 
 more warps would only help if additional in-flight transactions could push DRAM utilization from 87% to 100%.
 _____________________________________________________________________________________________________
 Impact Of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/8348065c-42d9-4373-bc57-eef9772b0d41" />
-The dot at 16 registers per thread = 100% occupancy. Your kernel uses very few registers (the coalesced kernel
+The dot at 16 registers per thread = 100% occupancy. The kernel uses very few registers (the coalesced kernel
 is tid = blockIdx.x * blockDim.x + threadIdx.x; d_out[tid] = d_in[tid] * 2.0f; — 3–4 registers total).
 The cliff at 64 registers per thread dropping to ~30% shows the general register file pressure curve for
-Blackwell SM120. You are nowhere near this cliff.
+Blackwell SM120. It is nowhere near this cliff.
 _____________________________________________________________________________________________________
 Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/fe2292b4-8093-4a88-ba52-7a1350119694" />
@@ -122,15 +131,15 @@ The drop after 768 is because large blocks reduce the number of resident blocks 
 _____________________________________________________________________________________________________
 Impact of Varying Shared Memory Usage Per Block
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ff1b8aba-287d-4e4f-acb5-6143a89dc62f" />
-Dot at 0 shared memory = 100% occupancy. Since bandwidth_coalesced uses zero shared memory, you have maximum 
+Dot at 0 shared memory = 100% occupancy. Since bandwidth_coalesced uses zero shared memory, It has maximum 
 flexibility. The steep cliff shows that adding shared memory would immediately hurt occupancy because 
-Blackwell SM120's shared memory budget limits concurrent blocks. This confirms your kernel design is optimal — 
+Blackwell SM120's shared memory budget limits concurrent blocks. This confirms the kernel design is optimal — 
 no shared memory needed for a pure streaming copy.
 
 _____________________________________________________________________________________________________
 Impact of Varying Block Barriers
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/a9ba698c-d15d-4829-8638-619277320960" />
-Dot at 0 barriers = 100%. No __syncthreads() in your kernel, as expected. Barriers reduce occupancy similarly
+Dot at 0 barriers = 100%. No __syncthreads() in the kernel, as expected. Barriers reduce occupancy similarly
 to shared memory.
 ____________________________________________________________________________________________________
 
@@ -138,8 +147,8 @@ Impact of Varying Cluster Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/4d6d4e8b-2b0f-4663-a96f-b019c99373b4" />
 
 
-Flat zero active clusters — you're not using Thread Block Clusters (a Hopper+ feature). The chart shows 0 
-active clusters regardless of potential cluster size. This is correct; you didn't annotate your kernel with
+Flat zero active clusters — it is not using Thread Block Clusters (a Hopper+ feature). The chart shows 0 
+active clusters regardless of potential cluster size. This is correct; it didn't annotate the kernel with
 \__cluster_dims\__ or use cooperative groups clusters. For a simple streaming kernel this is fine, but it's a 
 feature worth knowing for future work on Blackwell.
 Branch Instructions: 16,777,216 — that's exactly 2²⁸ / 16 = N / 32 (one branch per warp for the if (tid < n) 
@@ -161,20 +170,20 @@ ________________________________________________________________________________
 Summary:
 For bandwidth_coalesced specifically:
 
-822 GB/s / 86.92% DRAM SOL — excellent. You are achieving ~86% of peak DRAM bandwidth with a simple streaming 
+822 GB/s / 86.92% DRAM SOL — excellent. It is achieving ~86% of peak DRAM bandwidth with a simple streaming 
 kernel. This is the right baseline.
 L1=0, L2=0 hit rate — correct for a 2 GiB working set. Not a problem.
 Long Scoreboard stalls at 120 cycles, 91.8% — the entire execution is DRAM-fetch time. There is no compute
 work to expose. This is the expected shape of a bandwidth-bound kernel.
 80.4% achieved occupancy vs. 100% theoretical — the ~20% gap is tail-effect from block scheduling, not a
-kernel design flaw. You can't improve it without reformulating the problem.
+kernel design flaw. It can't improve it without reformulating the problem.
 Scheduler is idle 92.74% of cycles — this is the dual face of #3. The GPU is not being lazy; it's correctly
 saturating DRAM. The scheduler has nothing to issue because every warp is waiting on DRAM.
-Occupancy sensitivity charts — your kernel is at the optimal point on every axis (registers, shared mem, block
+Occupancy sensitivity charts — the kernel is at the optimal point on every axis (registers, shared mem, block
 size, barriers). There is no low-hanging occupancy fruit.
 
 Post the pinned memory screenshots when ready — the interesting comparison will be in the H2D/D2H transfer
-timing (which NCU won't profile, but your cudaEventElapsedTime will show), and whether the kernel-side metrics 
+timing (which NCU won't profile, but the cudaEventElapsedTime will show), and whether the kernel-side metrics 
 change (they should not, since once data is on-device the access pattern is identical regardless of original
 host memory type).
 
