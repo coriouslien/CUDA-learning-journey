@@ -1,4 +1,4 @@
-// wmma_double_buff_sync.cu
+// wmma_double_buff_async.cu
 
 #include "wmma_double_buff_async.h"
 #include <cstdio>
