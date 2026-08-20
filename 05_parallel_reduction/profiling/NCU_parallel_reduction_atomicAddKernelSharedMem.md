@@ -151,7 +151,11 @@ Impact of Varying Cluster Size
 <pre>
 Branch Efficiency: 98.64% (vs 100% naive)
 
-Avg Divergent Branches: 7,801.90 — this is significant and expected. The tree reduction if (tx < s) creates warp divergence in every reduction step. At each step, half the threads go inactive. With 9 steps and 16 warps/block, divergence accumulates. Branch efficiency is still 98.64% because the vast majority of executed instructions are in the non-divergent load loop.
+
+Avg Divergent Branches: 7,801.90 — this is significant and expected. The tree reduction if (tx < s) 
+creates warp divergence in every reduction step. At each step, half the threads go inactive. 
+With 9 steps and 16 warps/block, divergence accumulates. Branch efficiency is still 98.64% 
+because the vast majority of executed instructions are in the non-divergent load loop.
 
 Warp Stall Sampling: Top stall location has 112,669 samples (35%) and 52,802 samples (16%) — these point to
 the __syncthreads() locations in the tree reduction loop, consistent with Barrier Stalls being the dominant
