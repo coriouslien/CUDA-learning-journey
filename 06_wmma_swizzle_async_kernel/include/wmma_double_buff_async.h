@@ -1,4 +1,4 @@
-// wmma_double_buff_sync.h
+// wmma_double_buff_async.h
 #pragma once
 #include "wmma_basic.h"
 
