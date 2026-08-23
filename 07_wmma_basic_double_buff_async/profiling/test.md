@@ -50,6 +50,12 @@ Memory Chart
 The dominant traffic path is shared memory: 100.66 M instructions, 100.66 M requests — essentially all compute-side memory traffic is hitting shared memory. The L2 is healthy (86.1% hit rate), and DRAM is not the bottleneck (26.48% throughput). The memory chart in image 6 confirms the pipeline path: global → L1/TEX (low 0.76% hit) → L2 (de-compressed 25.77 GB) → device (267 MB). Very little global data needs to go to DRAM.
 
 The critical finding is the bank conflict warning: 24.1-way average conflict, 83.43% of all shared-memory wavefronts conflicted. This means for every intended single-cycle shared load, the hardware is serializing it into an average of 24 sub-transactions. This is why MIO (memory I/O) is saturated and why Short Scoreboard stalls dominate warp state time. Your PAD=8 is not solving the problem because the WMMA intrinsic's internal thread-to-element mapping across a 16×16 fragment generates a strided access pattern that hits the same banks regardless of simple row padding.
+____________________________________________________________________________________________________
+Scheduler Statistics
+<img width="1456" height="839" alt="image" src="https://github.com/user-attachments/assets/aea2f6c6-5eea-4c6d-9217-8be50aa8a8db" />
+Warps Per Scheduler
+<img width="1456" height="839" alt="image" src="https://github.com/user-attachments/assets/0059955c-1bcd-4181-96f9-cc56c60cb93f" />
+With 3.98 active warps per scheduler but only 0.31 eligible warps per scheduler, 77.56% of all cycles have no eligible warp to issue. The scheduler is essentially idle three quarters of the time. This is the direct downstream effect of the bank conflicts: all 4 active warps are simultaneously stalled waiting for their shared memory requests to complete through the serialized conflict replays, leaving the scheduler with nothing to do. The issue slot utilization warning (11.80% estimated speedup) represents the scheduling efficiency loss on top of the actual stall time — even when a warp becomes eligible, there often aren't enough of them to hide the latency.
 
 _____________________________________________________________________________________________________
 Warp State Statistics
