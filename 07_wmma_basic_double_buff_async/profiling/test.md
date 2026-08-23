@@ -6,18 +6,30 @@ GPU Speed Of Light Throughput
 <pre>
 Memory: 88.20% / Compute: 36.68%, Kernel is heavily bounded by the memory subsystem, specifically 
 L1/Shared Memory.
+It is memory-bound, not compute-bound. Memory throughput at 88.20% and L1/TEX at 90.08% are both above the 80%
+"High Throughput" warning threshold.
 L1/TEX Cache Throughput: 90.08%, L1/TEX throughput is near maximum, driven entirely by shared memory traffic.
 </pre>
 _____________________________________________________________________________________________________
 Floating Point Operations Roofline (Half Precision)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/91de6d8a-3cc5-4255-bdd4-3b8f8fd16969" />
-
+Compute SM sits at only 36.68%, which means the arithmetic units are starved — they have data problems, 
+not instruction-count problems. The roofline shows this clearly: the kernel's achieved FLOPS/s plots as a 
+flat horizontal line far below the half-precision tensor-core roof, meaning you are not limited by the 
+number of operations you need to do, but by how slowly those operations are being fed.
 
 _____________________________________________________________________________________________________
 Compute Workload Analysis
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/c9d49c18-d369-4ae2-98da-40149ec26191" />
 
+The good news: Tensor (FP) is the dominant pipe at 37.5% of active cycles, which confirms that wmma::mma_sync
+is actually issuing to tensor cores and not silently falling back to CUDA cores. ALU and FMA are tiny slivers,
+which is expected.
 
+The bad news: 37.5% pipe utilization on the tensor core means it is sitting idle 62.5% of active cycles. 
+The tensor core pipeline wants to be fed continuously; instead it is being starved by the shared memory 
+stalls described below. The overall IPC of 0.90 is very low — roughly one instruction every 4.5 scheduler
+cycles instead of one per cycle.
 _____________________________________________________________________________________________________
 Memory Workload Analysis
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/1227b465-30df-4a8a-9727-2ed36d5da0c6" />
