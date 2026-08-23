@@ -85,6 +85,10 @@ GPU and Memory Workload Distribution
 ________________________________________________________________________________________________
 Source Counters
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/b9fe5fba-67da-4950-8a6d-e42f1d4eb0c1" />
+<pre>
+NCU flags a critical bottleneck under "Source Counters" with "Uncoalesced Shared Accesses," highlighting a massive 46.94% estimated speedup opportunity.
+  
+</pre>
 
 
 ________________________________________________________________________________________________
