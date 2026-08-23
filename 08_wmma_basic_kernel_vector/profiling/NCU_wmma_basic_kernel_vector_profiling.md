@@ -1,22 +1,69 @@
 The kernel is currently heavily latency-bound and suffering from severe memory access inefficiencies.
 GPU Speed Of Light Throughput
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/9eb273ad-a46b-4188-9f82-bcb94dd8717e" />
-The kernel is significantly underperforming its theoretical limits. Both Compute and Memory Speed Of Light (SOL) throughputs are stalled at approximately 45.48%. When compute and memory are both this low, it typically indicates that the GPU is struggling to hide latency and is spending too much time waiting for data rather than executing instructions.
+The kernel is significantly underperforming its theoretical limits. Both Compute and Memory Speed Of Light
+(SOL) throughputs are stalled at approximately 45.48%. When compute and memory are both this low, it typically
+indicates that the GPU is struggling to hide latency and is spending too much time waiting for data rather
+than executing instructions.
+________________________________________________________________________________________________
+Tensor Core Operations Roofline
+<img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/7a400a13-9c3c-49d8-84f5-2d8e9865a967" />
+<pre>
+The Roofline chart visually plots your kernel's achieved performance against the theoretical hardware limits
+of the GPU.
+
+X-Axis (Arithmetic Intensity): Measures how many operations (math) the kernel performs per byte of data
+fetched from DRAM. Higher is generally better, indicating less reliance on slow global memory.
+
+Y-Axis (Performance): Measures the actual computational throughput in Operations Per Second (OP/s).
+
+The "Roofs": The sloped diagonal lines represent memory bandwidth bottlenecks. The flat horizontal lines
+represent the peak theoretical compute limits of the hardware's math units.
+
+The kernel's data point (the purple dot on the far right) reveals two critical pieces of information:
+excellent Memory Reuse: Your Arithmetic Intensity is exceptionally high at 1,019.35 OP/byte. This means your
+blocking and tiling strategy is highly effective at reusing data once it is brought on-chip. It is firmly
+positioned to the right of the ridge point, putting you in "compute-bound" territory.Severe Compute
+Underutilization: Despite being in the compute-bound region, your achieved performance is roughly 12.7 
+Tera-Operations per second ($12.7 \times 10^{12}$ OP/s). This sits drastically below the horizontal "roof"
+line, which represents the peak theoretical limit of your RTX 5080's Tensor Cores.
+
+Starved Math Units
+This Roofline chart perfectly visualizes the symptom of the memory access issues we diagnosed earlier.
+
+The high Arithmetic Intensity confirms that the kernel is successfully relying on the tiles stored in 
+shared memory rather than fetching repeatedly from global DRAM.
+
+However, the massive gap between your data point and the peak compute roofline means the Tensor Cores 
+are sitting idle.
+
+They are not performing matrix multiplication because they are trapped in "Long Scoreboard" stalls, 
+waiting for the SM to resolve the massive shared memory bank conflicts caused by the wmma::load_matrix_sync
+instructions.
+</pre>
 ________________________________________________________________________________________________
 Floating Point Operations Roofline (Half Precision)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/bcc31618-f664-4a5f-8c26-adcd32e392e1" />
-
+<pre>
+The absence of data points on this chart confirms that your kernel is executing its math operations entirely
+on the Tensor Cores rather than the standard CUDA cores.
+  
+</pre>
 ________________________________________________________________________________________________
 Compute Workload Analysis
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/cc58b72e-e66c-4702-b245-ea699ec2b896" />
 <pre>
 The workload profile confirms that this kernel is currently bottlenecked by memory traffic, not compute math.
 
-The Load/Store Unit (LSU) is the highest-utilized pipeline at roughly 50%, while actual arithmetic units (ALU, FMA, Tensor) sit at or below 25%.
+The Load/Store Unit (LSU) is the highest-utilized pipeline at roughly 50%, while actual arithmetic units 
+(ALU, FMA, Tensor) sit at or below 25%.
 
-Furthermore, your L1/TEX cache hit rate is exceptionally poor at 9.54%. Because data isn't found in L1, the GPU must fetch it from L2 or device memory, heavily contributing to your Long Scoreboard stalls.
+Furthermore, your L1/TEX cache hit rate is exceptionally poor at 9.54%. Because data isn't found in L1, 
+the GPU must fetch it from L2 or device memory, heavily contributing to your Long Scoreboard stalls.
 
-To fix these issues, you will likely need to pad your shared memory allocations (e.g., adding an offset column) to break up the stride causing the 12-way bank conflicts, and review your global memory access patterns to ensure they are fully coalesced to improve L1 hit rates.
+To fix these issues, you will likely need to pad your shared memory allocations (e.g., adding an offset
+column) to break up the stride causing the 12-way bank conflicts, and review your global memory access
+patterns to ensure they are fully coalesced to improve L1 hit rates.
   
 </pre>
 
