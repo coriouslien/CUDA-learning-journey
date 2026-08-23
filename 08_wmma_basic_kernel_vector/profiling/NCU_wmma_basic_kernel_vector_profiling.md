@@ -38,8 +38,15 @@ Warp State Statistics
 ________________________________________________________________________________________________
 Warp State (All Cycles)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/98387f20-4426-433c-8e24-be3da969e894" />
+<pre>
+The Streaming Multiprocessors (SMs) are struggling to keep warps active.
 
+Schedulers report having no eligible warps to issue 53.73% of the time.
 
+The primary cause for this is "Stall Long Scoreboard," which delays warps by roughly 15 cycles per instruction.
+
+This stall state means your threads are locked up waiting on L1TEX (global, local, texture, or surface) memory operations to return data.
+</pre>
 ________________________________________________________________________________________________
 Occupancy
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/5c994ab1-7807-432a-bfc5-284ac6273914" />
