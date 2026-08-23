@@ -47,7 +47,9 @@ ________________________________________________________________________________
 Memory Chart
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/be49e134-2d60-480b-9a54-b05ad9461d1c" />
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/f74ff8a0-73bf-4249-96a1-fc944c3eba5b" />
+The dominant traffic path is shared memory: 100.66 M instructions, 100.66 M requests — essentially all compute-side memory traffic is hitting shared memory. The L2 is healthy (86.1% hit rate), and DRAM is not the bottleneck (26.48% throughput). The memory chart in image 6 confirms the pipeline path: global → L1/TEX (low 0.76% hit) → L2 (de-compressed 25.77 GB) → device (267 MB). Very little global data needs to go to DRAM.
 
+The critical finding is the bank conflict warning: 24.1-way average conflict, 83.43% of all shared-memory wavefronts conflicted. This means for every intended single-cycle shared load, the hardware is serializing it into an average of 24 sub-transactions. This is why MIO (memory I/O) is saturated and why Short Scoreboard stalls dominate warp state time. Your PAD=8 is not solving the problem because the WMMA intrinsic's internal thread-to-element mapping across a 16×16 fragment generates a strided access pattern that hits the same banks regardless of simple row padding.
 
 _____________________________________________________________________________________________________
 Warp State Statistics
