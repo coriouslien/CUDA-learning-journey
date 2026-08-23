@@ -9,7 +9,7 @@ ________________________________________________________________________________
 Tensor Core Operations Roofline
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/7a400a13-9c3c-49d8-84f5-2d8e9865a967" />
 <pre>
-The Roofline chart visually plots your kernel's achieved performance against the theoretical hardware limits
+The Roofline chart visually plots the kernel's achieved performance against the theoretical hardware limits
 of the GPU.
 
 X-Axis (Arithmetic Intensity): Measures how many operations (math) the kernel performs per byte of data
@@ -21,12 +21,12 @@ The "Roofs": The sloped diagonal lines represent memory bandwidth bottlenecks. T
 represent the peak theoretical compute limits of the hardware's math units.
 
 The kernel's data point (the purple dot on the far right) reveals two critical pieces of information:
-excellent Memory Reuse: Your Arithmetic Intensity is exceptionally high at 1,019.35 OP/byte. This means your
+excellent Memory Reuse: the Arithmetic Intensity is exceptionally high at 1,019.35 OP/byte. This means the
 blocking and tiling strategy is highly effective at reusing data once it is brought on-chip. It is firmly
-positioned to the right of the ridge point, putting you in "compute-bound" territory.Severe Compute
-Underutilization: Despite being in the compute-bound region, your achieved performance is roughly 12.7 
+positioned to the right of the ridge point, putting it in "compute-bound" territory.Severe Compute
+Underutilization: Despite being in the compute-bound region, the achieved performance is roughly 12.7 
 Tera-Operations per second ($12.7 \times 10^{12}$ OP/s). This sits drastically below the horizontal "roof"
-line, which represents the peak theoretical limit of your RTX 5080's Tensor Cores.
+line, which represents the peak theoretical limit of the RTX 5080's Tensor Cores.
 
 Starved Math Units
 This Roofline chart perfectly visualizes the symptom of the memory access issues we diagnosed earlier.
@@ -34,7 +34,7 @@ This Roofline chart perfectly visualizes the symptom of the memory access issues
 The high Arithmetic Intensity confirms that the kernel is successfully relying on the tiles stored in 
 shared memory rather than fetching repeatedly from global DRAM.
 
-However, the massive gap between your data point and the peak compute roofline means the Tensor Cores 
+However, the massive gap between the data point and the peak compute roofline means the Tensor Cores 
 are sitting idle.
 
 They are not performing matrix multiplication because they are trapped in "Long Scoreboard" stalls, 
@@ -45,7 +45,7 @@ ________________________________________________________________________________
 Floating Point Operations Roofline (Half Precision)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/bcc31618-f664-4a5f-8c26-adcd32e392e1" />
 <pre>
-The absence of data points on this chart confirms that your kernel is executing its math operations entirely
+The absence of data points on this chart confirms that the kernel is executing its math operations entirely
 on the Tensor Cores rather than the standard CUDA cores.
   
 </pre>
@@ -58,11 +58,11 @@ The workload profile confirms that this kernel is currently bottlenecked by memo
 The Load/Store Unit (LSU) is the highest-utilized pipeline at roughly 50%, while actual arithmetic units 
 (ALU, FMA, Tensor) sit at or below 25%.
 
-Furthermore, your L1/TEX cache hit rate is exceptionally poor at 9.54%. Because data isn't found in L1, 
-the GPU must fetch it from L2 or device memory, heavily contributing to your Long Scoreboard stalls.
+Furthermore, the L1/TEX cache hit rate is exceptionally poor at 9.54%. Because data isn't found in L1, 
+the GPU must fetch it from L2 or device memory, heavily contributing to the Long Scoreboard stalls.
 
-To fix these issues, you will likely need to pad your shared memory allocations (e.g., adding an offset
-column) to break up the stride causing the 12-way bank conflicts, and review your global memory access
+To fix these issues, it will likely need to pad the shared memory allocations (e.g., adding an offset
+column) to break up the stride causing the 12-way bank conflicts, and review the global memory access
 patterns to ensure they are fully coalesced to improve L1 hit rates.
   
 </pre>
@@ -101,7 +101,8 @@ Schedulers report having no eligible warps to issue 53.73% of the time.
 
 The primary cause for this is "Stall Long Scoreboard," which delays warps by roughly 15 cycles per instruction.
 
-This stall state means your threads are locked up waiting on L1TEX (global, local, texture, or surface) memory operations to return data.
+This stall state means the threads are locked up waiting on L1TEX (global, local, texture, or surface) memory
+operations to return data.
 </pre>
 ________________________________________________________________________________________________
 Occupancy
