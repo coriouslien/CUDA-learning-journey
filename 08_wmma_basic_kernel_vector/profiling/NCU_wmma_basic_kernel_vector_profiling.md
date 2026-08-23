@@ -1,7 +1,7 @@
-
+The kernel is currently heavily latency-bound and suffering from severe memory access inefficiencies.
 GPU Speed Of Light Throughput
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/9eb273ad-a46b-4188-9f82-bcb94dd8717e" />
-
+The kernel is significantly underperforming its theoretical limits. Both Compute and Memory Speed Of Light (SOL) throughputs are stalled at approximately 45.48%. When compute and memory are both this low, it typically indicates that the GPU is struggling to hide latency and is spending too much time waiting for data rather than executing instructions.
 ________________________________________________________________________________________________
 Floating Point Operations Roofline (Half Precision)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/bcc31618-f664-4a5f-8c26-adcd32e392e1" />
