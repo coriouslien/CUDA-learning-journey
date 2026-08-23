@@ -1,11 +1,12 @@
-
+15.22 ms / 34.9M cycles on RTX 5080, Grid: (64, 64, 1), Block: (256, 1, 1) (8 warps/block).
 GPU Speed Of Light Throughput
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/caebdf8a-0e58-4e5f-98e4-d09d5a58a09f" />
 
 _____________________________________________________________________________________________________
 Floating Point Operations Roofline (Half Precision)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/91de6d8a-3cc5-4255-bdd4-3b8f8fd16969" />
-
+Memory: 88.20% / Compute: 36.68%, Kernel is heavily bounded by the memory subsystem, specifically 
+L1/Shared Memory.
 
 _____________________________________________________________________________________________________
 Compute Workload Analysis
@@ -64,7 +65,10 @@ GPU and Memory Workload Distribution
 
 
 _____________________________________________________________________________________________________
-
+<pre>
+There is a major memory pipeline bottleneck caused by severe shared memory bank conflicts and low occupancy.
+  
+</pre>
 
 _____________________________________________________________________________________________________
 
