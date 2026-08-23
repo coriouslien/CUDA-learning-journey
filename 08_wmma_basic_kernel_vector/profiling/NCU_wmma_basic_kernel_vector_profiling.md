@@ -1,5 +1,5 @@
 <pre>
-his NCU profile for wmma_basic_kernel, grid (64,64,1) × block (128,1,1), running 1.35 ms / 3,088,088 cycles 
+This NCU profile for wmma_basic_kernel, grid (64,64,1) × block (128,1,1), running 1.35 ms / 3,088,088 cycles 
 on RTX 5080 at 2.28 GHz.
   
 The kernel is currently heavily latency-bound and suffering from severe memory access inefficiencies.
