@@ -54,12 +54,10 @@ The critical finding is the bank conflict warning: 24.1-way average conflict, 83
 _____________________________________________________________________________________________________
 Warp State Statistics
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/72a77cc4-2581-46f8-b035-2f87f811ab87" />
-
-
-_____________________________________________________________________________________________________
 Warp State (All Cycles)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/5a8101ce-f5dc-4e53-98d8-220609f21d2e" />
 
+The warp state breakdown tells you exactly where cycles are being spent. Short Scoreboard at 5.8 cycles (32.9% of total) is the dominant stall and is entirely the bank conflict manifesting as MIO backpressure — each conflicted load holds a scoreboard entry for 24× longer than it should. Stall Wait (~2.5 cy) is warps that are ready but not selected by the scheduler — with so few eligible warps this barely matters. Math Pipe Throttle (~2.4 cy) is the tensor core pipeline being full or backed up, which is a secondary consequence of infrequent data delivery. Stall Barrier (~2.0 cy) is the cost of __syncthreads() inside your double-buffering loop — unavoidable, but inflated because the conflicted loads extend the window between barrier issue and barrier clear. Long Scoreboard (~1.3 cy) represents global memory latency — relatively small, confirming DRAM is not the primary issue.
 
 _____________________________________________________________________________________________________
 Occupancy
