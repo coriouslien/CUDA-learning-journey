@@ -9,7 +9,16 @@ Floating Point Operations Roofline (Half Precision)
 ________________________________________________________________________________________________
 Compute Workload Analysis
 <img width="1024" height="590" alt="image" src="https://github.com/user-attachments/assets/cc58b72e-e66c-4702-b245-ea699ec2b896" />
+<pre>
+The workload profile confirms that this kernel is currently bottlenecked by memory traffic, not compute math.
 
+The Load/Store Unit (LSU) is the highest-utilized pipeline at roughly 50%, while actual arithmetic units (ALU, FMA, Tensor) sit at or below 25%.
+
+Furthermore, your L1/TEX cache hit rate is exceptionally poor at 9.54%. Because data isn't found in L1, the GPU must fetch it from L2 or device memory, heavily contributing to your Long Scoreboard stalls.
+
+To fix these issues, you will likely need to pad your shared memory allocations (e.g., adding an offset column) to break up the stride causing the 12-way bank conflicts, and review your global memory access patterns to ensure they are fully coalesced to improve L1 hit rates.
+  
+</pre>
 
 ________________________________________________________________________________________________
 Memory Workload Analysis
