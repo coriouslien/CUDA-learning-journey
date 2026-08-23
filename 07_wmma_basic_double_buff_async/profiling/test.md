@@ -21,8 +21,16 @@ Compute Workload Analysis
 _____________________________________________________________________________________________________
 Memory Workload Analysis
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/1227b465-30df-4a8a-9727-2ed36d5da0c6" />
+<pre>
+Severe Shared Memory Bank Conflicts (75.16% Estimated Speedup)
 
+The Problem: The kernel executes 100.66M shared memory requests, but due to poor stride/access patterns, 
+warps suffer an average 24.1-way bank conflict out of the 32 banks.
 
+Impact: Every single shared memory load is serialized up to 24 times by the hardware scheduler, choking 
+the L1/Shared Memory pipeline (pushing L1 throughput to 90.08%) while compute tensor cores sit idle 
+(only 36.68% utilization).
+</pre>
 _____________________________________________________________________________________________________
 Memory Chart
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/be49e134-2d60-480b-9a54-b05ad9461d1c" />
