@@ -189,8 +189,6 @@ Impact of Varying Block Size
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/646b46ac-a8f6-4341-a1d7-4c29f54c372d" />
 
 
-
-
 ________________________________________________________________________________________________
 Impact of Varying Shared Memory Usage Per Block
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/f8c12921-4f9e-473f-bb59-b91a2e1582a5" />
@@ -209,9 +207,12 @@ GPU and Memory Workload Distribution
 |SM Active Cycles|	2,891,719|	2,729,989|	3,062,223|
 
 <pre>
-SM Workload Imbalance: Est. Speedup 5.23% — some SMs finish 5.57% earlier than average, some 5.59% later. The grid (64,64,1) = 4,096 blocks / ~84 SMs on RTX 5080 ≈ ~48 waves, so tail-effect imbalance is mild but present.
+SM Workload Imbalance: Est. Speedup 5.23% — some SMs finish 5.57% earlier than average, some 5.59% later. 
+The grid (64,64,1) = 4,096 blocks / ~84 SMs on RTX 5080 ≈ ~48 waves, so tail-effect imbalance is mild but 
+present.
 
-SMSPs Workload Imbalance: Est. Speedup 6.42% — sub-SM partitions (4 SMSPs per SM) show slightly worse imbalance, consistent with the bank conflict pattern disturbing SMSP-level load balance.
+SMSPs Workload Imbalance: Est. Speedup 6.42% — sub-SM partitions (4 SMSPs per SM) show slightly worse
+imbalance, consistent with the bank conflict pattern disturbing SMSP-level load balance.
 </pre>
 
 ________________________________________________________________________________________________
@@ -244,7 +245,3 @@ ________________________________________________________________________________
 ________________________________________________________________________________________________
 
 
-________________________________________________________________________________________________
-
-
-________________________________________________________________________________________________
