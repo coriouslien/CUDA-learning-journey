@@ -1,12 +1,23 @@
+<pre>
+The profiled kernel (wmma_swizzle_... on an NVIDIA RTX 5080) is heavily bottlenecked by shared memory bank
+conflicts and uncoalesced shared memory accesses, rather than compute capacity or DRAM bandwidth.
+
+Although L1/TEX throughput is near maximum at 96.60%, the SM Compute throughput is only 15.36%. Schedulers
+spend 90.13% of their cycles with zero eligible warps to issue because warps are stuck waiting on serialized
+shared memory operations.
+  
+</pre>
+
 GPU Speed Of Light Through
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/d2841edd-faca-4bb2-baee-333559a23deb" />
 <pre>
 The headline numbers:
 
-Compute (SM): 15.36% — Tensor Cores are almost idle
+Compute (SM): 15.36% — Tensor Cores are almost idle. Arithmetic and Tensor Core pipelines are heavily 
+underutilized.
 Memory: 95.93% — completely memory-bound
-L1/TEX: 96.60% — L1 is saturated
-L2: 22.60%, DRAM: 22.24% — both low
+L1/TEX: 96.60% — L1 is saturated. The L1 cache/shared memory data pipe is running at near maximum capacity.
+L2: 22.60%, DRAM: 22.24% — both low. Off-chip memory bandwidth is not the bottleneck. The issue is strictly localized inside the SM's shared memory / L1 data path.
 
 The critical insight here: L1 is at 96.60% but DRAM is only 22.24%. Traffic is not reaching DRAM — 
 it is being recycled inside L1/TEX. This is the bank conflict signature: the same data is being 
@@ -32,7 +43,8 @@ Scheduler statistics:
 
 Active Warps Per Scheduler: 5.93 (out of theoretical 6)
 Eligible Warps Per Scheduler: 0.15 — nearly zero
-No Eligible: 90.13% — 90% of cycles the scheduler has nothing to issue
+No Eligible: 90.13% — 90% of cycles the scheduler has nothing to issue. Schedulers issue an instruction 
+only once every ~10 cycles because warps are perpetually stalled waiting on data.
 Issue Slot Utilization: one instruction every 10.1 cycles
 
 Active warps are present but almost none are eligible. They are all stalled. The double-buffering is not 
