@@ -24,7 +24,7 @@ L1/TEX Hit Rate: 0.56% — catastrophically low for global loads
 L2 Hit Rate: 78.43%
 Mem Busy: 95.93%, Max Bandwidth: 22.47%, Mem Pipes Busy: 14.44%
 
-The 0.56% L1 hit rate on global loads tells you cp.async / LDGSTS is bypassing L1 as intended (.BYPASS flag),
+The 0.56% L1 hit rate on global loads tells it cp.async / LDGSTS is bypassing L1 as intended (.BYPASS flag),
 going straight to L2/DRAM. That is correct behavior. The memory pressure is entirely on the shared memory 
 read side, not global loads.
 
@@ -43,7 +43,7 @@ Warps Per Scheduler
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/ea5e3ac1-0202-4765-ba18-8a5f16045c0e" />
 <pre>
 Visually confirms image 2: Active warps ≈ Theoretical warps (both around 6), but Eligible and Issued warps are
-near zero — a flat sliver on the chart. You have warps, but they cannot issue because they are all stalled on
+near zero — a flat sliver on the chart. It has warps, but they cannot issue because they are all stalled on
 the same bottleneck.
   
 </pre>
@@ -93,12 +93,12 @@ Block Limit Shared Memory: 3 blocks — this is the binding limiter
 Block Limit Registers: 4 blocks
 Block Limit Warps: 6 blocks
 
-The binding occupancy limiter is shared memory, not registers. Your a_smem[2][BLOCK_M * BLOCK_K] + b_smem[2]
+The binding occupancy limiter is shared memory, not registers. The a_smem[2][BLOCK_M * BLOCK_K] + b_smem[2]
 [BLOCK_K * BLOCK_N] = 2×(64×64×2) + 2×(64×64×2) = 32KB per block. SM120 has ~100KB smem per SM, so only 3 
 blocks fit → 3×8 warps = 24 warps → 50% occupancy. This is the hard ceiling from the double-buffer smem
 allocation.
 
-NCU estimate: fixing occupancy gives 4.07% speedup — meaning occupancy is not your problem. Even if you got 
+NCU estimate: fixing occupancy gives 4.07% speedup — meaning occupancy is not the problem. Even if it got 
 to 100% occupancy it wouldn't matter much. The bottleneck is the bank conflicts.
 </pre>
 _________________________________________________________________________________________________
@@ -106,14 +106,14 @@ Impact of Varying Register Count Per Thread & Impact of Varying Block Size
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/d318a8e7-b40f-413b-a45b-c43e1500f51f" />
 <pre>
 Current operating point (dot) is at ~52 registers, 50% occupancy. The curve stays flat at 50% until ~80
-registers, then drops. You have headroom to use more registers without losing occupancy. This is relevant
+registers, then drops. It has headroom to use more registers without losing occupancy. This is relevant
 context: the compiler is not over-pressuring registers here.
 
-Block size curve shows 50% at block size 256 (your current config: 256 threads = 8 warps). Larger block sizes
+Block size curve shows 50% at block size 256 (the current config: 256 threads = 8 warps). Larger block sizes
 can reach ~75% occupancy, but that would require restructuring the warp tiling.
 
-Block size graph: your current 256-thread config hits 50% occupancy. Block sizes around 384–512 threads
-achieve ~75% — but those configs would require you to change how many warps handle the tile, and the smem 
+Block size graph: the current 256-thread config hits 50% occupancy. Block sizes around 384–512 threads
+achieve ~75% — but those configs would require it to change how many warps handle the tile, and the smem 
 per block would change too.
 
 </pre>
@@ -123,17 +123,17 @@ Impact of Varying Shared Memory Usage Per Block & Impact of Varying Block Barrie
 
 <pre>
 Shared memory graph: current usage is ~32KB (shown by the dot at ~32KB on the x-axis). At that point 
-occupancy drops from the ~67% flat region to ~50%. If you could reduce smem usage below ~25KB, occupancy 
-would jump. That's not practical with double-buffering at BLOCK_M=BLOCK_N=BLOCK_K=64 unless you reduce 
+occupancy drops from the ~67% flat region to ~50%. If it could reduce smem usage below ~25KB, occupancy 
+would jump. That's not practical with double-buffering at BLOCK_M=BLOCK_N=BLOCK_K=64 unless it reduces 
 tile size.
 
-The dot is at ~32KB smem, 50% occupancy. The graph shows the cliff is around 25KB → if you halved the smem
-(e.g., single buffer instead of double, or smaller tiles) you'd get to 67% occupancy. But the double-buffer 
+The dot is at ~32KB smem, 50% occupancy. The graph shows the cliff is around 25KB → if it halved the smem
+(e.g., single buffer instead of double, or smaller tiles) it would get to 67% occupancy. But the double-buffer 
 is necessary for latency hiding, so this is a genuine tension — reducing smem to gain occupancy would
 eliminate the pipeline.
 
 Current barrier count keeps occupancy at 50%. Adding more barriers (from more __syncthreads() calls) 
-crushes occupancy rapidly. At 9+ barriers occupancy drops to ~33%. This tells you that your existing
+crushes occupancy rapidly. At 9+ barriers occupancy drops to ~33%. This tells it that the existing
 __syncthreads() pattern (2 per pipeline iteration: one after wait, the implicit one from pipeline) is 
 already at a reasonable count. Don't add more sync points.
 </pre>
@@ -146,10 +146,10 @@ That is 84% of the total 1,677,721,600 wavefronts
 NCU estimated speedup from fixing this: 83.42%
 
 This is the definitive answer. 84% of all shared memory wavefronts are excess replays from bank conflicts.
-Only 16% are doing real work. NCU is telling you that fixing smem access patterns would give an 83% speedup —
+Only 16% are doing real work. NCU is telling it that fixing smem access patterns would give an 83% speedup —
 roughly a 6× improvement on this kernel alone.
 
-This is exactly the unfixed swizzle/read mismatch: you XOR-swizzle on the write path but 
+This is exactly the unfixed swizzle/read mismatch: it XOR-swizzle on the write path but 
 wmma::load_matrix_sync generates linear LDSM reads, so every LDSM instruction hits conflicts because the 
 data layout in smem doesn't match what LDSM expects.
 </pre>
@@ -164,8 +164,8 @@ Summary:
 |Uncoalesced smem wavefronts|	84% excess|	The direct conflict count|
 |NCU estimated speedup|	83.42%|	Fix the smem layout|
 
-<pre>
 
 
-</pre>
+
+
 
