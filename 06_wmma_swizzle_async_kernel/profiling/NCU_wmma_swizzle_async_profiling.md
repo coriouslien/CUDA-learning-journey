@@ -64,14 +64,17 @@ Warp State Statistics
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/88ee5349-a84e-40fb-9ebf-01f0efb5929d" />
 <pre>
 Warp Cycles Per Issued Instruction: 60.07 cycles
-Short Scoreboard Stalls: dominant — 29.3 cycles average, representing 48.8% of all 60.1 cycles between
-instructions
+Short Scoreboard Stalls(~48.8% of latency / 29.3 cycles): dominant — 29.3 cycles average, representing 48.8%
+of all 60.1 cycles between instructions. The single largest stall reason. Short scoreboard stalls occur when
+instructions depend on pending shared memory accesses (LDS/STS) or special function unit operations.
 NCU message: "primary reason is memory operations to shared memory... reduce bank conflicts"
 
 This is the direct confirmation. Short Scoreboard stalls in the context of smem = warps are waiting for LDSM
 (shared memory load for WMMA) to complete. The LDSM.16.M88.4 instructions are stalling because bank conflicts
 are serializing the accesses. Each conflict multiplies the cycles needed, and since 60 cycles separate
 instructions on average, the pipeline is essentially stalled almost the entire time.
+
+
 </pre>
 _________________________________________________________________________________________________
 Warp State (All Cyclyes)
@@ -82,7 +85,8 @@ Warp State (All Cyclyes)
  Stall breakdown in order of magnitude:
 
 Stall Short Scoreboard — dominant, extends past the 20-cycle mark, close to 30
-Stall MIO Throttle — roughly half of Short Scoreboard
+Stall MIO Throttle — roughly half of Short Scoreboard. The second largest stall contributor, indicating 
+the internal Memory Input/Output instruction queue is completely backed up.
 Stall Barrier — moderate, from __syncthreads() in the pipeline
 Stall Long Scoreboard — smaller, from global memory latency
 Stall Wait, Math Pipe Throttle, Selected — small
@@ -99,8 +103,10 @@ ________________________________________________________________________________
 Occupancy
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/0288fa5f-6d60-4310-8c13-3c7962bebe1f" />
 <pre>
-Theoretical Occupancy: 50% — 24 warps per SM
-Achieved Occupancy: 49.39% — matches theoretical closely, so the kernel is launching correctly
+Theoretical Occupancy: 50% — 24 warps per SM. Limited by Shared Memory allocation per block (~34 KB per 
+block, allowing at most 3 blocks of 256 threads per SM). 
+Achieved Occupancy: 49.39% — matches theoretical closely, so the kernel is launching correctly. Matches 
+theoretical occupancy well; register allocation (~52 registers/thread) is not currently an occupancy limiter.
 Block Limit Shared Memory: 3 blocks — this is the binding limiter
 Block Limit Registers: 4 blocks
 Block Limit Warps: 6 blocks
@@ -176,7 +182,14 @@ Summary:
 |Uncoalesced smem wavefronts|	84% excess|	The direct conflict count|
 |NCU estimated speedup|	83.42%|	Fix the smem layout|
 
+<pre>
+The profiler reports 1.41 billion excessive wavefronts (84% of total 1.68B wavefronts) due to uncoalesced
+shared memory accesses.
 
+A single shared memory load/store instruction that should execute in 1 wavefront is taking multiple 
+serialized replay phases due to severe bank conflicts, saturating the L1 pipeline and causing the 
+estimated 83.42% performance loss.
+</pre>
 
 
 
