@@ -68,7 +68,7 @@ __global__ void wmma_swizzle_async_kernel(const half *__restrict__ a,
         // XOR Swizzle for A
         int swizzled_col = smem_col ^ ((smem_row % 8) * 8);
         int swizzled_idx = (smem_row * SMEM_STRIDE) + swizzled_col;
-
+        // vectorized memory loads, the asynchronous copy instruction grabs 16 bytes at a time
         __pipeline_memcpy_async(&a_smem[0][swizzled_idx], &a[global_a_idx], 16);
     }
 
