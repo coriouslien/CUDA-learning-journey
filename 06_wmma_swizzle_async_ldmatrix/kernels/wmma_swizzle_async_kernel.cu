@@ -26,8 +26,8 @@ constexpr int WMMA_K = 16;
 // Define the total size of the tile computed by the entire block
 constexpr int BLOCK_M = 64;
 constexpr int BLOCK_N = 64;
-constexpr int BLOCK_K = 64;
-
+constexpr int BLOCK_K = 64; // total number of elements in a row
+ 
 const int SMEM_STRIDE = 64;
 
 // --- MAIN KERNEL ---
@@ -46,7 +46,7 @@ __global__ void wmma_swizzle_async_kernel(const half *__restrict__ a,
     int block_row = blockIdx.y * BLOCK_M;
     int block_col = blockIdx.x * BLOCK_N;
     //int load_iterations = (BLOCK_M * BLOCK_K) / (blockDim.x * elem_thread);
-
+    // number of chunks in a row.
     int num_tiles = k / BLOCK_K;
 
     int load_stage = 0;
