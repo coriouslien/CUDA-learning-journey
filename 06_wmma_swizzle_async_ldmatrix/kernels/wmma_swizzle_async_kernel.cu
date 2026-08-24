@@ -58,7 +58,7 @@ __global__ void wmma_swizzle_async_kernel(const half *__restrict__ a,
 // ---------------------------------------------------------------
 // PROLOGUE: load tile 0 into smem[0], wait for it
 // ---------------------------------------------------------------
-#pragma unroll 1
+//#pragma unroll 1
     for (int i = tid; i < loads_A; i += blockDim.x)
     {
         int smem_row = i / (BLOCK_K / 8);
@@ -72,7 +72,7 @@ __global__ void wmma_swizzle_async_kernel(const half *__restrict__ a,
         __pipeline_memcpy_async(&a_smem[0][swizzled_idx], &a[global_a_idx], 16);
     }
 
-#pragma unroll 1
+//#pragma unroll 1
     for (int i = tid; i < loads_B; i += blockDim.x)
     {
         int smem_row = i / (BLOCK_N / 8);
