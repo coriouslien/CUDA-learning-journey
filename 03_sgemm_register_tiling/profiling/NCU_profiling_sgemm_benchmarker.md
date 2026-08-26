@@ -15,14 +15,14 @@ successfully being served by the L1 cache. The L1/TEX Hit Rate is reported at 87
 numbers confirm data is largely recycled within L1.
   
 — This is the shared memory/register file pressure picture, not a bandwidth wall against HBM. 
-The 58% compute SOL tells you the SMs are not fully pipelined. 
+The 58% compute SOL tells the SMs are not fully pipelined. 
 </pre>
 ___________________________________________________________________________________________________
 Memory Workload Analysis & Scheduler Statics
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/ca291bca-3a70-4746-ac94-ec4c02196587" />
 <pre>
 L1 hit rate of 87.69% and L2 of 91.93% are both very high — almost nothing reaches DRAM. This is consistent 
-with your memory note: you achieved this after applying float4 vectorized global loads. The 2.94 GB/s 
+with the memory note: it achieved this after applying float4 vectorized global loads. The 2.94 GB/s 
 effective memory throughput is extremely low for an 8192³ problem, confirming essentially everything is served
 from cache/shared memory, but the Mem Busy at 72.94% with only Max Bandwidth at 40.27% reveals the memory unit
 is being kept busy not by large transfers but by high-frequency small accesses — i.e., shared memory bank 
@@ -42,9 +42,9 @@ capable of 4 warps per scheduler due to resource limits. Out of the 3.87 active 
 are eligible to issue instructions per cycle, and only 0.61 instructions are actually issued per cycle.
 Warp Scheduling ~12. Theoretical: ~4. Active: ~3.87. Eligible: ~1.85. Issued: 0.61.
 The issued/active ratio of 0.61/3.87 ≈ 15.8% means on most cycles, the scheduler has active warps but none are
-ready to issue. This is the classic register-pressure / low-occupancy trap: you have 4 warps but most are
+ready to issue. This is the classic register-pressure / low-occupancy trap: it has 4 warps but most are
 stalled, so the scheduler sits idle ~38% of cycles. The gap between Eligible (1.85) and Issued (0.61) further
-tells you that even when warps are eligible, the issue rate is far below 1 instruction/cycle — there are 
+tells that even when warps are eligible, the issue rate is far below 1 instruction/cycle — there are 
 structural stalls (dispatch, scoreboard, barriers) preventing back-to-back issuance.
 </pre>
 ______________________________________________________________________________________________________
@@ -55,7 +55,7 @@ Warp Cycles Per Issued Instruction: 6.31. All threads active (Avg Active Threads
 
 The dominant flagged stall is Stall Not Selected (Est. Local Speedup: 32.07%) at ~2.0 cycles/instruction.
 NCU's interpretation here is nuanced: "Not Selected" means the warp was eligible but the scheduler picked a
-different warp. High Not-Selected stalls typically indicate you actually have enough warps to hide latency but
+different warp. High Not-Selected stalls typically indicate it actually have enough warps to hide latency but
 are accumulating priority/scheduling overhead — it suggests reducing active warps to improve cache coherence.
 However, this must be read in context: with only ~4 warps/scheduler, "Not Selected" isn't evidence of healthy
 occupancy; it's evidence that the few warps you have are competing for the issue slot against each other while
@@ -111,7 +111,7 @@ Impact of Varying Register Count Per Thread
 registers. 
 - The curve shows occupancy at 100% for ≤40 registers/thread, then cascading down in steps. The kernel is at 
 ~128 registers/thread (dot at x≈128), sitting at ~33%. The "Impact of Varying Register Count" graph shows the
-kernel uses 128 registers per thread. If you can reduce the register footprint per thread below 80,
+kernel uses 128 registers per thread. If it can reduce the register footprint per thread below 80,
 theoretical occupancy would jump to 50%; reducing it to 40 or below would allow 100% theoretical occupancy.
 These are aggressive reductions for a register-tiled kernel that explicitly accumulates 
 in registers — the tiling strategy itself is what's burning registers.
@@ -145,7 +145,7 @@ Block Barriers Count: ~2, at ~33%. The drop at ~12 barriers is the SM barrier re
   -The current usage places on the flat plateau at ~33% occupancy.
   -The chart indicates that as long as the kernel uses 12 or fewer barriers per block, occupancy will not
   drop. If it was to exceed 12 barriers, theoretical occupancy would fall abruptly to around 15%.
-  -Because the curve is perfectly flat to the left of your current position, reducing the number of
+  -Because the curve is perfectly flat to the left of the current position, reducing the number of
   synchronization points will not improve the occupancy. (As established in the previous screenshots, 
   register count is the strict bottleneck limiting occupancy).
 </pre>
@@ -193,18 +193,18 @@ MIO Throttle / Short Scoreboard: Bank conflict replay inflating MIO queue depth
 
 -The occupancy issue (66.67% est. speedup) and shared memory bank conflicts (36.04%) are the two independent 
 problems, and they interact: fixing bank conflicts reduces MIO pressure but doesn't recover the missing warps;
-fixing occupancy gives the scheduler more warps to hide the remaining latencies. The path you already took — 
+fixing occupancy gives the scheduler more warps to hide the remaining latencies. The path it already took — 
 moving to WMMA/tensor cores — addresses occupancy indirectly by reducing the register accumulator footprint
-(HMMA executes the FMA in hardware with architectural register reuse). The bank conflict fix you applied 
-(SMEM_A_STRIDE = BLOCK_K + 8) addresses the second problem. That's precisely why you got the 2.55x speedup on 
+(HMMA executes the FMA in hardware with architectural register reuse). The bank conflict fix it applied 
+(SMEM_A_STRIDE = BLOCK_K + 8) addresses the second problem. That's precisely why it got the 2.55x speedup on 
 the WMMA path.
 
 -Optimization: (for learning)
 -Since this workload is heavily memory-bound (as seen in the high L1/TEX cache throughput from the previous
-data), fixing these shared memory bank conflicts is the highest leverage action you can take right now.
+data), fixing these shared memory bank conflicts is the highest leverage action it can take right now.
 
 -If it is managing the shared memory tiles manually, check the indexing arithmetic. A common fix is to pad the
-inner dimension of your shared memory arrays (e.g., changing __shared__ float smem[TILE_Y][TILE_X] to 
+inner dimension of the shared memory arrays (e.g., changing __shared__ float smem[TILE_Y][TILE_X] to 
 smem[TILE_Y][TILE_X + 1]) to shift the bank alignments and break up the conflicts.
 
 -If it is utilizing layout algebra abstractions or collective builders (such as CuTe, I have experienced using
