@@ -15,8 +15,8 @@ Floating Point Operations Roofline (Half Precision)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/91de6d8a-3cc5-4255-bdd4-3b8f8fd16969" />
 Compute SM sits at only 36.68%, which means the arithmetic units are starved — they have data problems, 
 not instruction-count problems. The roofline shows this clearly: the kernel's achieved FLOPS/s plots as a 
-flat horizontal line far below the half-precision tensor-core roof, meaning you are not limited by the 
-number of operations you need to do, but by how slowly those operations are being fed.
+flat horizontal line far below the half-precision tensor-core roof, meaning it is not limited by the 
+number of operations it needs to do, but by how slowly those operations are being fed.
 
 _____________________________________________________________________________________________________
 Compute Workload Analysis
@@ -49,7 +49,7 @@ Memory Chart
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/f74ff8a0-73bf-4249-96a1-fc944c3eba5b" />
 The dominant traffic path is shared memory: 100.66 M instructions, 100.66 M requests — essentially all compute-side memory traffic is hitting shared memory. The L2 is healthy (86.1% hit rate), and DRAM is not the bottleneck (26.48% throughput). The memory chart in image 6 confirms the pipeline path: global → L1/TEX (low 0.76% hit) → L2 (de-compressed 25.77 GB) → device (267 MB). Very little global data needs to go to DRAM.
 
-The critical finding is the bank conflict warning: 24.1-way average conflict, 83.43% of all shared-memory wavefronts conflicted. This means for every intended single-cycle shared load, the hardware is serializing it into an average of 24 sub-transactions. This is why MIO (memory I/O) is saturated and why Short Scoreboard stalls dominate warp state time. Your PAD=8 is not solving the problem because the WMMA intrinsic's internal thread-to-element mapping across a 16×16 fragment generates a strided access pattern that hits the same banks regardless of simple row padding.
+The critical finding is the bank conflict warning: 24.1-way average conflict, 83.43% of all shared-memory wavefronts conflicted. This means for every intended single-cycle shared load, the hardware is serializing it into an average of 24 sub-transactions. This is why MIO (memory I/O) is saturated and why Short Scoreboard stalls dominate warp state time. The PAD=8 is not solving the problem because the WMMA intrinsic's internal thread-to-element mapping across a 16×16 fragment generates a strided access pattern that hits the same banks regardless of simple row padding.
 ____________________________________________________________________________________________________
 Scheduler Statistics
 <img width="1456" height="839" alt="image" src="https://github.com/user-attachments/assets/aea2f6c6-5eea-4c6d-9217-8be50aa8a8db" />
@@ -63,7 +63,15 @@ Warp State Statistics
 Warp State (All Cycles)
 <img width="1924" height="1109" alt="image" src="https://github.com/user-attachments/assets/5a8101ce-f5dc-4e53-98d8-220609f21d2e" />
 
-The warp state breakdown tells you exactly where cycles are being spent. Short Scoreboard at 5.8 cycles (32.9% of total) is the dominant stall and is entirely the bank conflict manifesting as MIO backpressure — each conflicted load holds a scoreboard entry for 24× longer than it should. Stall Wait (~2.5 cy) is warps that are ready but not selected by the scheduler — with so few eligible warps this barely matters. Math Pipe Throttle (~2.4 cy) is the tensor core pipeline being full or backed up, which is a secondary consequence of infrequent data delivery. Stall Barrier (~2.0 cy) is the cost of __syncthreads() inside your double-buffering loop — unavoidable, but inflated because the conflicted loads extend the window between barrier issue and barrier clear. Long Scoreboard (~1.3 cy) represents global memory latency — relatively small, confirming DRAM is not the primary issue.
+The warp state breakdown tells you exactly where cycles are being spent. Short Scoreboard at 5.8 cycles 
+(32.9% of total) is the dominant stall and is entirely the bank conflict manifesting as MIO backpressure —
+each conflicted load holds a scoreboard entry for 24× longer than it should. Stall Wait (~2.5 cy) is warps
+that are ready but not selected by the scheduler — with so few eligible warps this barely matters. Math Pipe
+Throttle (~2.4 cy) is the tensor core pipeline being full or backed up, which is a secondary consequence of
+infrequent data delivery. Stall Barrier (~2.0 cy) is the cost of __syncthreads() inside the double-buffering
+loop — unavoidable, but inflated because the conflicted loads extend the window between barrier issue and
+barrier clear. Long Scoreboard (~1.3 cy) represents global memory latency — relatively small, confirming 
+DRAM is not the primary issue.
 
 _____________________________________________________________________________________________________
 Occupancy
