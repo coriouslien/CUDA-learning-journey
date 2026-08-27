@@ -68,14 +68,14 @@ register limit saying 3 blocks could fit.
 Achieved (73%) is lower than theoretical (100%) due to workload imbalance — the grid cap (32 * minGrid = 5376
 blocks) means later waves have fewer blocks to schedule as SMs drain. NCU estimates a 27% speedup from fixing
 occupancy, but this is misleading — the real bottleneck is the stalls, not occupancy itself. Higher occupancy
-helps hide latency only if you have more independent memory requests to issue; here the memory system is
+helps hide latency only if it has more independent memory requests to issue; here the memory system is
 already throttled.
 _______________________________________________________________________________________________________
 Impact of Varying Register Count Per Thread
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1ae43922-af63-43ec-9d4b-0f194aa103a3" />
 Current is at 16 registers/thread — occupancy stays at 100% theoretical up to 40 registers, then drops 
 sharply at 41+
-Your kernel is register-efficient; this is not the constraint
+the kernel is register-efficient; this is not the constraint
 _______________________________________________________________________________________________________
 Impact of Varying Block Size
 <img width="1826" height="1024" alt="image" src="https://github.com/user-attachments/assets/1050ef79-afb4-46b8-bcb5-861d5a98d2a9" />
@@ -122,7 +122,7 @@ global memory with no caching, no shared memory staging, and two global atomicAd
 The two atomicAdd calls at the end also serialize across all 4M threads to a single output location, but the 
 load-loop latency dominates so heavily that the atomic contention is secondary here.
 
-The shared memory kernels that follow in your project address the L1/L2 miss problem directly — that is 
+The shared memory kernels that follow in the project address the L1/L2 miss problem directly — that is 
 exactly what the NCU is telling you to do.
 
 
